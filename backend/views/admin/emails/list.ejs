@@ -1,0 +1,58 @@
+<%- include('../layout-start', { pageTitle: 'Email Automation' }) %>
+
+    <div class="page-actions">
+        <div></div>
+        <a href="/admin/emails/new" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            New Template
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+            <% if (templates.length===0) { %>
+                <p class="empty-state">No email templates yet.</p>
+                <% } else { %>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Subject</th>
+                                <th>Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% templates.forEach(t=> { %>
+                                <tr>
+                                    <td><strong>
+                                            <%= t.name %>
+                                        </strong></td>
+                                    <td>
+                                        <%= t.subject %>
+                                    </td>
+                                    <td class="text-muted">
+                                        <%= new Date(t.updatedAt).toLocaleDateString() %>
+                                    </td>
+                                    <td class="actions">
+                                        <a href="/admin/emails/<%= t.id %>/preview"
+                                            class="btn btn-xs btn-outline">Preview</a>
+                                        <a href="/admin/emails/<%= t.id %>/edit" class="btn btn-xs btn-outline">Edit</a>
+                                        <form method="POST" action="/admin/emails/<%= t.id %>/delete"
+                                            style="display:inline" onsubmit="return confirm('Delete this template?')">
+                                            <button type="submit" class="btn btn-xs btn-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                    <% } %>
+        </div>
+    </div>
+
+    <%- include('../layout-end') %>

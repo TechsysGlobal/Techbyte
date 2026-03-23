@@ -1,0 +1,70 @@
+<%- include('../layout-start', { pageTitle: brand.name + ' Products' }) %>
+
+    <div class="page-actions">
+        <div style="display:flex;align-items:center;gap:14px;">
+            <% if (brand.logoUrl) { %>
+                <img src="<%= brand.logoUrl %>" class="brand-logo-lg" alt="<%= brand.name %>">
+                <% } %>
+                    <div>
+                        <h2 style="font-size:20px;font-weight:700;letter-spacing:-0.3px;">
+                            <%= brand.name %>
+                        </h2>
+                        <p class="text-muted">
+                            <%= brand._count ? brand._count.products : 0 %> products
+                        </p>
+                    </div>
+        </div>
+        <a href="/admin/brands" class="btn btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            Back to Brands
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+            <% if (typeof products !=='undefined' && products.length> 0) { %>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Title</th>
+                            <th>SKU</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% products.forEach(p=> { %>
+                            <tr>
+                                <td>
+                                    <% if (p.imageSrc) { %><img src="<%= p.imageSrc %>" class="thumb">
+                                        <% } else { %><span class="no-img">📷</span>
+                                            <% } %>
+                                </td>
+                                <td><strong>
+                                        <%= p.title %>
+                                    </strong></td>
+                                <td><code><%= p.variantSku %></code></td>
+                                <td>€<%= parseFloat(p.variantPrice).toFixed(2) %>
+                                </td>
+                                <td><span class="<%= p.variantInventoryQty > 0 ? 'text-success' : 'text-danger' %>">
+                                        <%= p.variantInventoryQty %>
+                                    </span></td>
+                                <td><a href="/admin/products/<%= p.id %>/edit" class="btn btn-xs btn-outline">Edit</a>
+                                </td>
+                            </tr>
+                            <% }) %>
+                    </tbody>
+                </table>
+                <% } else { %>
+                    <p class="empty-state">No products under this brand yet.</p>
+                    <% } %>
+        </div>
+    </div>
+
+    <%- include('../layout-end') %>

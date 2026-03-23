@@ -1,0 +1,15 @@
+<div class="error-page">
+    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ff3b30"
+        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:16px;">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+    <h2>Something went wrong</h2>
+    <% if (typeof error !=='undefined' && error) { %>
+        <p>
+            <%= error %>
+        </p>
+        <% } %>
+            <a href="/admin" class="btn btn-primary" style="margin-top:8px;">Back to Dashboard</a>
+</div>

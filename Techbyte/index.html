@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#36B084" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechByte - Wholesale Electronics</title>
+  <meta name="description"
+    content="TechByte — your trusted B2B wholesale electronics partner. Shop smartphones, accessories, and devices from Apple, Samsung, Xiaomi at competitive bulk pricing.">
+  <meta name="robots" content="index, follow">
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TechByte - Wholesale Electronics">
+  <meta property="og:description"
+    content="B2B wholesale electronics — smartphones, accessories, and devices from top brands at competitive bulk pricing.">
+  <meta property="og:url" content="https://techbyte.com">
+  <meta property="og:image" content="/og-image.png">
+  <meta property="og:site_name" content="TechByte">
+  <meta property="og:locale" content="en_US">
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TechByte - Wholesale Electronics">
+  <meta name="twitter:description" content="B2B wholesale electronics at competitive bulk pricing.">
+  <meta name="twitter:image" content="/og-image.png">
+  <!-- Canonical -->
+  <link rel="canonical" href="https://techbyte.com">
+  <!-- Preload LCP Image -->
+  <link rel="preload" as="image" href="https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=800&fm=webp&q=80"
+    fetchpriority="high">
+  <!-- Connect to Supabase Storage Early -->
+  <link rel="preconnect" href="https://dzshtxpypqilygjwllra.supabase.co">
+  <!-- App Shell Critical CSS -->
+  <style>
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, sans-serif;
+      background: #fff;
+    }
+
+    .app-shell {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .shell-topbar {
+      height: 32px;
+      background: #f9fbfb;
+      width: 100%;
+    }
+
+    .shell-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .shell-logo {
+      width: 140px;
+      height: 36px;
+      background: #f3f4f6;
+      border-radius: 4px;
+    }
+
+    .shell-search {
+      flex: 1;
+      max-width: 500px;
+      height: 42px;
+      background: #f9fafb;
+      border-radius: 9999px;
+      margin: 0 2rem;
+      border: 1px solid #e5e7eb;
+    }
+
+    .shell-icons {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .shell-icon {
+      width: 36px;
+      height: 36px;
+      background: #f3f4f6;
+      border-radius: 50%;
+    }
+
+    .shell-nav {
+      background: #36B084;
+      height: 50px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shell-nav-inner {
+      display: flex;
+      max-width: 1280px;
+      width: 100%;
+      padding: 0 1.5rem;
+    }
+
+    .shell-nav-item {
+      width: 70px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      margin-right: 1.5rem;
+    }
+
+    .shell-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 4rem;
+      flex-grow: 1;
+    }
+
+    .shell-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #36B084;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .shell-search {
+        display: none;
+      }
+
+      .shell-nav {
+        display: none;
+      }
+
+      .shell-topbar {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root">
+    <div class="app-shell animate-pulse">
+      <div class="shell-topbar"></div>
+      <div class="shell-header">
+        <div class="shell-logo"></div>
+        <div class="shell-search"></div>
+        <div class="shell-icons">
+          <div class="shell-icon"></div>
+          <div class="shell-icon"></div>
+        </div>
+      </div>
+      <div class="shell-nav">
+        <div class="shell-nav-inner">
+          <div class="shell-nav-item"></div>
+          <div class="shell-nav-item"></div>
+          <div class="shell-nav-item"></div>
+          <div class="shell-nav-item"></div>
+        </div>
+      </div>
+      <div class="shell-content">
+        <div class="shell-spinner"></div>
+      </div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
+</html>

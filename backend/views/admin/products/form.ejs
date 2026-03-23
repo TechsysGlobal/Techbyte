@@ -1,0 +1,334 @@
+<%- include('../layout-start', { pageTitle: product ? 'Edit Product' : 'Add Product' }) %>
+
+    <div class="card">
+        <div class="card-body">
+            <% if (typeof error !=='undefined' && error) { %>
+                <div class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <%= error %>
+                </div>
+                <% } %>
+
+                    <form method="POST"
+                        action="/admin/products<%= product && product.id ? '/' + product.id + '/update' : '' %>"
+                        enctype="multipart/form-data">
+                        <input type="hidden" id="removeImageInput" name="removeImage" value="0">
+
+                        <h3 class="section-title">Basic Information</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="title">Title *</label>
+                                <input type="text" id="title" name="title"
+                                    value="<%= product ? product.title || '' : '' %>" required
+                                    placeholder="Product name" oninput="generateHandle(this.value)">
+                            </div>
+                            <div class="form-group">
+                                <label for="handle">Handle <small class="text-muted">(auto-generated)</small></label>
+                                <input type="text" id="handle" name="handle"
+                                    value="<%= product ? product.handle || '' : '' %>"
+                                    placeholder="auto-generated-handle" <%=product && product.id
+                                    ? 'readonly style="background:#f5f5f7;cursor:not-allowed;"' : '' %>>
+                            </div>
+                            <div class="form-group">
+                                <label for="vendor">Vendor</label>
+                                <input type="text" id="vendor" name="vendor"
+                                    value="<%= product ? product.vendor || '' : 'Techbyte' %>"
+                                    placeholder="Vendor name">
+                            </div>
+                            <div class="form-group">
+                                <label for="categoryId">Category</label>
+                                <select id="categoryId" name="categoryId">
+                                    <option value="">Select category</option>
+                                    <% if (typeof categories !=='undefined' ) { categories.forEach(c=> { %>
+                                        <option value="<%= c.id %>" <%=product && product.categoryId===c.id
+                                            ? 'selected' : '' %>><%= c.name %>
+                                        </option>
+                                        <% }) } %>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="tags">Tags</label>
+                                <input type="text" id="tags" name="tags"
+                                    value="<%= product ? product.tags || '' : '' %>" placeholder="Comma-separated tags">
+                            </div>
+                            <div class="form-group">
+                                <label for="brandId">Brand</label>
+                                <select id="brandId" name="brandId">
+                                    <option value="">Select brand</option>
+                                    <% if (typeof brands !=='undefined' ) { brands.forEach(b=> { %>
+                                        <option value="<%= b.id %>" <%=product && product.brandId===b.id ? 'selected'
+                                            : '' %>><%= b.name %>
+                                        </option>
+                                        <% }) } %>
+                                </select>
+                            </div>
+                        </div>
+
+                        <h3 class="section-title">Pricing & Inventory</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="variantSku">SKU *</label>
+                                <input type="text" id="variantSku" name="variantSku"
+                                    value="<%= product ? product.variantSku || '' : '' %>" required
+                                    placeholder="SKU-001">
+                            </div>
+                            <div class="form-group">
+                                <label for="variantPrice">Price (€) *</label>
+                                <input type="number" step="0.01" id="variantPrice" name="variantPrice"
+                                    value="<%= product ? product.variantPrice || '' : '' %>" required
+                                    placeholder="0.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="variantInventoryQty">Inventory *</label>
+                                <input type="number" id="variantInventoryQty" name="variantInventoryQty"
+                                    value="<%= product ? product.variantInventoryQty : 0 %>" required placeholder="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select id="status" name="status">
+                                    <option value="active" <%=product && product.status==='active' ? 'selected' : '' %>
+                                        >Active</option>
+                                    <option value="draft" <%=product && product.status==='draft' ? 'selected' : '' %>
+                                        >Draft</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <% if (product && product.id) { %>
+                            <h3 class="section-title">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" class="section-icon">
+                                    <path
+                                        d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z">
+                                    </path>
+                                    <line x1="7" y1="7" x2="7.01" y2="7"></line>
+                                </svg>
+                                Product Tags
+                            </h3>
+                            <div style="margin-bottom:20px;">
+                                <p class="text-muted" style="font-size:12px;margin-bottom:12px;">
+                                    Tags are used by catalog visibility rules to control which customers can see this
+                                    product.
+                                </p>
+
+                                <div style="margin-bottom:14px;">
+                                    <label
+                                        style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;display:block;">Current
+                                        Tags</label>
+                                    <div
+                                        style="display:flex;flex-wrap:wrap;gap:6px;min-height:32px;padding:8px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                                        <% var productTagList=(product.tags || '' ).split(',').map(t=>
+                                            t.trim()).filter(Boolean); %>
+                                            <% if (productTagList.length> 0) { %>
+                                                <% productTagList.forEach(tag=> { %>
+                                                    <span
+                                                        style="display:inline-flex;align-items:center;gap:4px;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:14px;font-size:13px;border:1px solid #fde68a;">
+                                                        <%= tag %>
+                                                            <button type="button"
+                                                                style="background:none;border:none;color:#92400e;cursor:pointer;font-size:15px;padding:0;line-height:1;"
+                                                                title="Remove tag"
+                                                                onclick="document.getElementById('removeTagInput-<%= product.id %>').value='<%= tag %>'; document.getElementById('removeTagForm-<%= product.id %>').submit();">&times;</button>
+                                                    </span>
+                                                    <% }) %>
+                                                        <% } else { %>
+                                                            <span class="text-muted" style="font-size:13px;">No tags
+                                                                assigned</span>
+                                                            <% } %>
+                                    </div>
+                                </div>
+
+                                <label
+                                    style="font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;display:block;">Add
+                                    Tag</label>
+                                <div style="display:flex;gap:8px;align-items:flex-end;">
+                                    <div class="form-group" style="margin-bottom:0;flex:1;max-width:200px;">
+                                        <select name="tag" form="addTagForm-<%= product.id %>" class="filter-select"
+                                            style="width:100%;font-size:13px;padding:6px 10px;"
+                                            onchange="document.querySelector('.new-tag-wrap').style.display=this.value==='__new__'?'block':'none'">
+                                            <option value="">Select tag...</option>
+                                            <% if (typeof allTags !=='undefined' ) { allTags.forEach(t=> { %>
+                                                <option value="<%= t %>">
+                                                    <%= t %>
+                                                </option>
+                                                <% }) } %>
+                                                    <option value="__new__">+ New Tag</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group new-tag-wrap"
+                                        style="margin-bottom:0;display:none;flex:1;max-width:200px;">
+                                        <input type="text" name="newTag" form="addTagForm-<%= product.id %>"
+                                            placeholder="Enter new tag..." style="font-size:13px;padding:6px 10px;">
+                                    </div>
+                                    <button type="submit" form="addTagForm-<%= product.id %>"
+                                        class="btn btn-sm btn-primary" style="height:36px;"
+                                        onclick="var sel=document.querySelector('select[name=tag][form=\'addTagForm-<%= product.id %>\']');if(sel && sel.value==='__new__')sel.value='';">Add
+                                        Tag</button>
+                                </div>
+                            </div>
+                            <% } %>
+
+                                <h3 class="section-title">Specifications</h3>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="color">Color</label>
+                                        <input type="text" id="color" name="color"
+                                            value="<%= product ? product.color || '' : '' %>" placeholder="e.g. Black">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="storage">Storage</label>
+                                        <input type="text" id="storage" name="storage"
+                                            value="<%= product ? product.storage || '' : '' %>"
+                                            placeholder="e.g. 256GB">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="region">Region</label>
+                                        <select id="region" name="region">
+                                            <option value="">Select region</option>
+                                            <% regions.forEach(r=> { %>
+                                                <option value="<%= r %>" <%=product && product.region===r ? 'selected'
+                                                    : '' %>>
+                                                    <%= r %>
+                                                </option>
+                                                <% }) %>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="model">Model Name</label>
+                                        <input type="text" id="model" name="model"
+                                            value="<%= product ? product.model || '' : '' %>"
+                                            placeholder="e.g. iPhone 15 Pro Max">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="sim">SIM</label>
+                                        <input type="text" id="sim" name="sim"
+                                            value="<%= product ? product.sim || '' : '' %>" placeholder="e.g. Dual SIM">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="warranty">Warranty</label>
+                                        <select id="warranty" name="warranty">
+                                            <option value="">Select warranty</option>
+                                            <% warranties.forEach(w=> { %>
+                                                <option value="<%= w %>" <%=product && product.warranty===w ? 'selected'
+                                                    : '' %>
+                                                    ><%= w %>
+                                                </option>
+                                                <% }) %>
+                                        </select>
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label for="inBox">In the Box</label>
+                                        <input type="text" id="inBox" name="inBox"
+                                            value="<%= product ? product.inBox || '' : '' %>"
+                                            placeholder="e.g. Phone, Charger, Cable">
+                                    </div>
+                                </div>
+
+                                <h3 class="section-title">Image</h3>
+                                <div class="form-group">
+                                    <label>Product Image</label>
+                                    <div class="file-upload-wrapper" data-single="true">
+                                        <input type="file" id="imageInput" name="image" accept="image/*"
+                                            class="file-input-hidden">
+                                        <label for="imageInput" class="file-upload-btn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                                <polyline points="17 8 12 3 7 8"></polyline>
+                                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                                            </svg>
+                                            Choose Image
+                                        </label>
+                                        <span class="file-name"></span>
+                                        <button type="button" class="file-clear-btn" style="display:none;">✕</button>
+                                    </div>
+                                    <% if (product && product.imageSrc) { %>
+                                        <div class="current-image" id="currentImageWrap"
+                                            style="margin-top:12px; position:relative; display:inline-block;">
+                                            <img src="<%= product.imageSrc %>" class="preview-img"
+                                                style="max-width:200px; border-radius:8px;">
+                                            <button type="button" onclick="removeImage()" class="img-remove-btn"
+                                                title="Remove image"
+                                                style="position:absolute; top:4px; right:4px; background:rgba(220,38,38,0.9); color:#fff; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-size:16px; line-height:1; display:none; align-items:center; justify-content:center;">
+                                                ✕
+                                            </button>
+                                        </div>
+                                        <style>
+                                            #currentImageWrap:hover .img-remove-btn {
+                                                display: flex !important;
+                                            }
+                                        </style>
+                                        <% } %>
+                                            <div id="imagePreview" style="display:none;margin-top:12px;"></div>
+                                </div>
+
+                                <div class="form-actions">
+                                    <button type="submit" class="btn btn-primary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
+                                            </path>
+                                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                            <polyline points="7 3 7 8 15 8"></polyline>
+                                        </svg>
+                                        <%= product && product.id ? 'Update Product' : 'Create Product' %>
+                                    </button>
+                                    <a href="/admin/products" class="btn btn-outline">Cancel</a>
+                                    <% if (product && product.id) { %>
+                                        <form method="POST" action="/admin/products/<%= product.id %>/delete"
+                                            style="display:inline;margin-left:auto;"
+                                            onsubmit="return confirm('Are you sure you want to delete this product? This action cannot be undone.')">
+                                            <button type="submit" class="btn btn-danger">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14"
+                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                                    <path
+                                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                                    </path>
+                                                </svg>
+                                                Delete
+                                            </button>
+                                        </form>
+                                        <% } %>
+                                </div>
+                    </form>
+        </div>
+    </div>
+
+    <% if (product && product.id) { %>
+        <form id="addTagForm-<%= product.id %>" method="POST" action="/admin/products/<%= product.id %>/add-tag"
+            style="display:none;"></form>
+        <form id="removeTagForm-<%= product.id %>" method="POST" action="/admin/products/<%= product.id %>/remove-tag"
+            style="display:none;">
+            <input type="hidden" name="tag" id="removeTagInput-<%= product.id %>">
+        </form>
+        <% } %>
+
+            <script>
+                function generateHandle(title) {
+                    const handleInput = document.getElementById('handle');
+                    // Only auto-generate for new products (not readonly)
+                    if (handleInput.readOnly) return;
+                    handleInput.value = title.toLowerCase()
+                        .replace(/[^a-z0-9\s-]/g, '')
+                        .replace(/\s+/g, '-')
+                        .replace(/-+/g, '-')
+                        .replace(/(^-|-$)/g, '');
+                }
+
+                function removeImage() {
+                    if (!confirm('Remove this image?')) return;
+                    document.getElementById('removeImageInput').value = '1';
+                    document.getElementById('currentImageWrap').style.display = 'none';
+                }
+            </script>
+
+            <%- include('../layout-end') %>

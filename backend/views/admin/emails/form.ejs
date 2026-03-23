@@ -1,0 +1,78 @@
+<%- include('../layout-start', { pageTitle: template ? 'Edit Template' : 'New Email Template' }) %>
+
+    <div class="card">
+        <div class="card-body">
+            <% if (typeof error !=='undefined' && error) { %>
+                <div class="alert alert-error">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    <%= error %>
+                </div>
+                <% } %>
+
+                    <form method="POST" action="/admin/emails<%= template ? '/' + template.id + '/edit' : '' %>">
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="name">Template Name *</label>
+                                <input type="text" id="name" name="name" value="<%= template ? template.name : '' %>"
+                                    required placeholder="e.g. Welcome Email">
+                            </div>
+                            <div class="form-group">
+                                <label for="subject">Subject *</label>
+                                <input type="text" id="subject" name="subject"
+                                    value="<%= template ? template.subject : '' %>" required
+                                    placeholder="Email subject line">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="htmlContent">HTML Content *</label>
+                            <textarea id="htmlContent" name="htmlContent" class="code-editor" required
+                                placeholder="<html>...</html>"
+                                oninput="updatePreview()"><%= template ? template.htmlContent : '' %></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Live Preview</label>
+                            <iframe id="previewFrame" class="email-preview"
+                                style="width:100%;min-height:300px;"></iframe>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"
+                                    fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                                    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                    <polyline points="7 3 7 8 15 8"></polyline>
+                                </svg>
+                                <%= template ? 'Update Template' : 'Create Template' %>
+                            </button>
+                            <a href="/admin/emails" class="btn btn-outline">Cancel</a>
+                        </div>
+                    </form>
+        </div>
+    </div>
+
+    <script>
+        function updatePreview() {
+            const html = document.getElementById('htmlContent').value;
+            const frame = document.getElementById('previewFrame');
+            const doc = frame.contentDocument || frame.contentWindow.document;
+            doc.open();
+            doc.write(html);
+            doc.close();
+        }
+        // Initial preview
+        if (document.getElementById('htmlContent').value) {
+            updatePreview();
+        }
+    </script>
+
+    <%- include('../layout-end') %>

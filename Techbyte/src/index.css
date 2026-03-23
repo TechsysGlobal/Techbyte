@@ -1,0 +1,52 @@
+@import '@fontsource/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Smooth scrolling for the entire page */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply text-gray-900 bg-white antialiased;
+    font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  /* Custom scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #36B084 #f3f4f6;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #f3f4f6;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #36B084;
+    border-radius: 4px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #2a8f6a;
+  }
+}
+
+@layer utilities {
+  /* Smooth scroll utility class */
+  .scroll-smooth {
+    scroll-behavior: smooth;
+  }
+  
+  .scroll-auto {
+    scroll-behavior: auto;
+  }
+}

@@ -1,0 +1,96 @@
+<%- include('../layout-start', { pageTitle: 'Brands' }) %>
+
+    <!-- Add Brand -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Add Brand</h2>
+        </div>
+        <div class="card-body">
+            <form action="/admin/brands" method="POST" enctype="multipart/form-data" class="inline-form">
+                <input type="text" name="name" required placeholder="Brand name" class="input-sm">
+                <div class="file-upload-wrapper" data-single="true">
+                    <input type="file" name="logo" accept="image/*" class="file-input-hidden" id="brandLogoInput">
+                    <label for="brandLogoInput" class="file-upload-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Upload Logo
+                    </label>
+                    <span class="file-name"></span>
+                    <button type="button" class="file-clear-btn" style="display:none;">✕</button>
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Brands Grid -->
+    <% if (brands.length===0) { %>
+        <div class="card">
+            <div class="card-body">
+                <p class="empty-state">No brands yet. Add one above!</p>
+            </div>
+        </div>
+        <% } else { %>
+            <div class="brands-grid">
+                <% brands.forEach(b=> { %>
+                    <div class="brand-card">
+                        <div class="brand-logo">
+                            <% if (b.logoUrl) { %>
+                                <img src="<%= b.logoUrl %>" alt="<%= b.name %>">
+                                <% } else { %>
+                                    <div class="brand-placeholder">
+                                        <%= b.name.charAt(0) %>
+                                    </div>
+                                    <% } %>
+                        </div>
+                        <h3><a href="/admin/brands/<%= b.slug %>">
+                                <%= b.name %>
+                            </a></h3>
+                        <p class="text-muted">
+                            <%= b.productCount || 0 %> products
+                        </p>
+                        <div class="brand-actions">
+                            <form method="POST" action="/admin/brands/<%= b.id %>/update" enctype="multipart/form-data"
+                                class="inline-form" style="justify-content:center;">
+                                <input type="text" name="name" value="<%= b.name %>" class="input-sm"
+                                    style="width:100px">
+                                <div class="file-upload-wrapper" data-single="true">
+                                    <input type="file" name="logo" accept="image/*" class="file-input-hidden"
+                                        id="brandLogo-<%= b.id %>">
+                                    <label for="brandLogo-<%= b.id %>" class="file-upload-btn btn-xs">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                        Logo
+                                    </label>
+                                    <span class="file-name"></span>
+                                    <button type="button" class="file-clear-btn" style="display:none;">✕</button>
+                                </div>
+                                <button type="submit" class="btn btn-xs btn-outline">Update</button>
+                            </form>
+                            <form method="POST" action="/admin/brands/<%= b.id %>/delete" style="display:inline"
+                                onsubmit="return confirm('Delete brand?')">
+                                <button type="submit" class="btn btn-xs btn-danger">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    <% }) %>
+            </div>
+            <% } %>
+
+                <%- include('../layout-end') %>

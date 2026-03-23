@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Environment variables
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+
+# IDE
+.vscode/
+**/ .vscode/
+.idea/
+**/ .idea/
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS files
+.DS_Store
+**/ .DS_Store
+Thumbs.db
+
+# Prisma
+prisma/migrations/**/migration_lock.toml
+
+# Logs
+*.log
+**/logs/
+npm-debug.log*
+
+# Temp & Debug & Uploads
+.tmp/
+**/uploads/
+**/bulk_price_debug.txt
+**/parsed_results.txt
+**/debug_parser.js
+**/verify_*.js
+**/test-*.js

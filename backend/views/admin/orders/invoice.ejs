@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice - Order #<%= order.id.substring(0, 8) %>
+    </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1a1a2e;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #1a1a2e;
+        }
+
+        .company-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .company-sub {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .invoice-title {
+            text-align: right;
+        }
+
+        .invoice-title h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #36b084;
+        }
+
+        .invoice-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .meta-block h4 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .meta-block p {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        thead th {
+            background: #f8fafc;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        tbody td {
+            padding: 10px 12px;
+            font-size: 13px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .totals {
+            max-width: 280px;
+            margin-left: auto;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            font-size: 14px;
+        }
+
+        .total-row.grand {
+            padding-top: 10px;
+            margin-top: 6px;
+            border-top: 2px solid #1a1a2e;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+        }
+
+        @media print {
+            body {
+                padding: 20px;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="no-print" style="text-align:right;margin-bottom:20px;">
+        <button onclick="window.print()"
+            style="padding:8px 20px;background:#1a1a2e;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px;">
+            🖨️ Print / Save as PDF
+        </button>
+    </div>
+
+    <div class="invoice-header">
+        <div>
+            <div class="company-name">TechByte</div>
+            <div class="company-sub">Technology Distribution</div>
+        </div>
+        <div class="invoice-title">
+            <h2>INVOICE</h2>
+            <p style="font-size:13px;color:#64748b;margin-top:4px;">#<%= order.id.substring(0, 8).toUpperCase() %>
+            </p>
+            <p style="font-size:13px;color:#64748b;">
+                <%= order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-GB', { day: '2-digit' ,
+                    month: 'long' , year: 'numeric' }) : '' %>
+            </p>
+        </div>
+    </div>
+
+    <div class="invoice-meta">
+        <div class="meta-block">
+            <h4>Bill To</h4>
+            <% if (order.user) { %>
+                <p>
+                    <strong>
+                        <%= order.user.companyName %>
+                    </strong><br>
+                    <%= order.user.companyAddr || '' %><br>
+                        <%= order.user.country || '' %>
+                            <%= order.user.zipCode ? '- ' + order.user.zipCode : '' %><br>
+                                <% if (order.user.taxId) { %>VAT: <%= order.user.taxId %><br>
+                                        <% } %>
+                                            <%= order.user.email %>
+                </p>
+                <% } %>
+        </div>
+        <div class="meta-block" style="text-align:right;">
+            <h4>Order Details</h4>
+            <p>
+                <strong>Status:</strong>
+                <%= order.currentStatus %><br>
+                    <strong>Payment:</strong>
+                    <%= order.currentStatus==='payment_pending' ? 'Pending' : order.currentStatus==='cancelled' ? 'N/A'
+                        : 'Completed' %>
+            </p>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>SKU</th>
+                <th class="text-right">Qty</th>
+                <th class="text-right">Unit Price</th>
+                <th class="text-right">Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% order.items.forEach((item, i)=> { %>
+                <tr>
+                    <td>
+                        <%= i + 1 %>
+                    </td>
+                    <td><strong>
+                            <%= item.product ? item.product.title : '(Deleted)' %>
+                        </strong></td>
+                    <td>
+                        <%= item.product ? item.product.variantSku : '—' %>
+                    </td>
+                    <td class="text-right">
+                        <%= item.quantity %>
+                    </td>
+                    <td class="text-right">€<%= parseFloat(item.priceAtSale).toFixed(2) %>
+                    </td>
+                    <td class="text-right"><strong>€<%= (item.quantity * parseFloat(item.priceAtSale)).toFixed(2) %>
+                        </strong></td>
+                </tr>
+                <% }) %>
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="total-row"><span>Subtotal</span><span>€<%= parseFloat(order.subtotal).toFixed(2) %></span></div>
+        <div class="total-row"><span>VAT (<%= (order.vatRate * 100).toFixed(0) %>%)</span><span>€<%=
+                    parseFloat(order.vatPrice).toFixed(2) %></span></div>
+        <div class="total-row"><span>Shipping</span><span>€<%= parseFloat(order.shippingPrice).toFixed(2) %></span>
+        </div>
+        <div class="total-row grand"><span>Grand Total</span><span>€<%= parseFloat(order.totalAmount).toFixed(2) %>
+            </span></div>
+    </div>
+
+    <div class="footer">
+        <p>Thank you for your business — TechByte</p>
+        <p>This is a computer-generated invoice.</p>
+    </div>
+</body>
+
+</html>

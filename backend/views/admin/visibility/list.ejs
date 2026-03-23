@@ -1,0 +1,172 @@
+<%- include('../layout-start', { pageTitle: 'Catalog Visibility' }) %>
+
+    <% if (success) { %>
+        <div
+            style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#166534;font-size:14px;">
+            ✅ <%= success %>
+        </div>
+        <% } %>
+            <% if (error) { %>
+                <div
+                    style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#991b1b;font-size:14px;">
+                    ❌ <%= error %>
+                </div>
+                <% } %>
+
+                    <!-- Create Rule Form -->
+                    <div class="card" style="margin-bottom:24px;">
+                        <div class="card-header">
+                            <h3>Create Visibility Rule</h3>
+                            <p class="text-muted" style="font-size:12px;margin-top:4px;">
+                                Products with the selected product tag become private. Only customers with the matching
+                                customer tag can view them.
+                            </p>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="/admin/visibility">
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                    <div class="form-group">
+                                        <label for="name">Rule Name *</label>
+                                        <input type="text" id="name" name="name" required
+                                            placeholder="e.g. Premium Product Access"
+                                            style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="description">Description</label>
+                                        <input type="text" id="description" name="description"
+                                            placeholder="Optional description"
+                                            style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="productTag">Product Tag *</label>
+                                        <select id="productTag" name="productTag" required
+                                            style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;background:#fff;">
+                                            <option value="">Select product tag...</option>
+                                            <% productTags.forEach(t=> { %>
+                                                <option value="<%= t %>">
+                                                    <%= t %>
+                                                </option>
+                                                <% }) %>
+                                        </select>
+                                        <% if (productTags.length===0) { %>
+                                            <p style="font-size:11px;color:#94a3b8;margin-top:4px;">No product tags
+                                                found. Assign tags to products first.</p>
+                                            <% } %>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="customerTag">Customer Tag *</label>
+                                        <select id="customerTag" name="customerTag" required
+                                            style="width:100%;padding:8px 12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;background:#fff;">
+                                            <option value="">Select customer tag...</option>
+                                            <% customerTags.forEach(t=> { %>
+                                                <option value="<%= t %>">
+                                                    <%= t %>
+                                                </option>
+                                                <% }) %>
+                                        </select>
+                                        <% if (customerTags.length===0) { %>
+                                            <p style="font-size:11px;color:#94a3b8;margin-top:4px;">No customer tags
+                                                found. Assign access tags to customers first.</p>
+                                            <% } %>
+                                    </div>
+                                </div>
+                                <div style="margin-top:16px;">
+                                    <button type="submit" class="btn btn-primary">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round">
+                                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        </svg>
+                                        Create Rule
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Existing Rules -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3>Active Visibility Rules</h3>
+                        </div>
+                        <div class="card-body" style="padding:0;overflow-x:auto;">
+                            <% if (rules.length===0) { %>
+                                <div style="padding:40px;text-align:center;">
+                                    <p style="color:#94a3b8;font-size:15px;">No visibility rules created yet.</p>
+                                    <p style="color:#cbd5e1;font-size:13px;margin-top:4px;">Create a rule above to
+                                        restrict product visibility.</p>
+                                </div>
+                                <% } else { %>
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Rule Name</th>
+                                                <th>Description</th>
+                                                <th>Product Tag</th>
+                                                <th>Customer Tag</th>
+                                                <th>Created</th>
+                                                <th style="width:80px;">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% rules.forEach(r=> { %>
+                                                <tr>
+                                                    <td style="font-weight:600;">
+                                                        <%= r.name %>
+                                                    </td>
+                                                    <td class="text-muted">
+                                                        <%= r.description || '—' %>
+                                                    </td>
+                                                    <td>
+                                                        <span
+                                                            style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:12px;font-size:12px;border:1px solid #fde68a;">
+                                                            🏷 <%= r.productTag %>
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <span
+                                                            style="background:#dbeafe;color:#1e40af;padding:3px 10px;border-radius:12px;font-size:12px;border:1px solid #93c5fd;">
+                                                            👤 <%= r.customerTag %>
+                                                        </span>
+                                                    </td>
+                                                    <td style="font-size:13px;color:#64748b;">
+                                                        <%= r.createdAt ? new
+                                                            Date(r.createdAt).toLocaleDateString('en-GB', {
+                                                            day: '2-digit' , month: 'short' , year: 'numeric' }) : '—'
+                                                            %>
+                                                    </td>
+                                                    <td>
+                                                        <form method="POST"
+                                                            action="/admin/visibility/<%= r.id %>/delete"
+                                                            onsubmit="return confirm('Delete this rule? Products may become public again.')">
+                                                            <button type="submit"
+                                                                class="btn btn-xs btn-danger">Delete</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                                <% }) %>
+                                        </tbody>
+                                    </table>
+                                    <% } %>
+                        </div>
+                    </div>
+
+                    <!-- How it works -->
+                    <div
+                        style="margin-top:24px;padding:16px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                        <h4 style="margin:0 0 8px;font-size:14px;color:#1a1a2e;">How Visibility Rules Work</h4>
+                        <ol style="margin:0;padding-left:20px;font-size:13px;color:#64748b;line-height:1.8;">
+                            <li><strong>Create a rule</strong> linking a product tag to a customer tag</li>
+                            <li>All products with that <strong>product tag</strong> automatically become
+                                <strong>private</strong></li>
+                            <li>Only customers with the matching <strong>customer tag</strong> can see those private
+                                products</li>
+                            <li>Customers can still see <strong>all public products</strong> plus their tag-matched
+                                private products</li>
+                            <li>Deleting a rule makes those products <strong>public again</strong> (if no other rule
+                                uses the same product tag)</li>
+                        </ol>
+                    </div>
+
+                    <%- include('../layout-end') %>

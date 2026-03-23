@@ -1,0 +1,218 @@
+<%- include('../layout-start', { pageTitle: 'Analytics' }) %>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(54,176,132,0.10);color:#36b084">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                </svg>
+            </div>
+            <div class="stat-info"><span class="stat-value">€<%= stats.grossSales %></span><span
+                    class="stat-label">Gross Sales</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(0,122,255,0.10);color:#007aff">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="9" cy="21" r="1"></circle>
+                    <circle cx="20" cy="21" r="1"></circle>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+            </div>
+            <div class="stat-info"><span class="stat-value">
+                    <%= stats.totalOrders %>
+                </span><span class="stat-label">Total Orders</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(52,199,89,0.10);color:#34c759">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+            </div>
+            <div class="stat-info"><span class="stat-value">
+                    <%= stats.fulfilledOrders %>
+                </span><span class="stat-label">Fulfilled</span></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:rgba(175,82,222,0.10);color:#af52de">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                    <polyline points="17 6 23 6 23 12"></polyline>
+                </svg>
+            </div>
+            <div class="stat-info"><span class="stat-value">
+                    <%= stats.returningRate %>%
+                </span><span class="stat-label">Returning Rate</span></div>
+        </div>
+    </div>
+
+    <!-- Sales Breakdown -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Sales Breakdown</h2>
+        </div>
+        <div class="card-body">
+            <div class="breakdown-grid">
+                <div class="breakdown-item"><span class="breakdown-label">Gross Sales</span><span
+                        class="breakdown-value">€<%= stats.grossSales %></span></div>
+                <div class="breakdown-item"><span class="breakdown-label">Taxes (VAT)</span><span
+                        class="breakdown-value">€<%= stats.totalTax %></span></div>
+                <div class="breakdown-item"><span class="breakdown-label">Shipping</span><span class="breakdown-value">€
+                        <%= stats.totalShipping %>
+                    </span></div>
+                <div class="breakdown-item total"><span class="breakdown-label">Net Sales</span><span
+                        class="breakdown-value">€<%= stats.netSales %></span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Over Time Chart -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Sales Over Time</h2>
+        </div>
+        <div class="card-body">
+            <div class="chart-container"><canvas id="salesChart"></canvas></div>
+        </div>
+    </div>
+
+    <!-- Top Products -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Top Products by Sell-Through</h2>
+        </div>
+        <div class="card-body">
+            <% if (topProducts.length===0) { %>
+                <p class="empty-state">No sales data yet.</p>
+                <% } else { %>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Sold</th>
+                                <th>Stock</th>
+                                <th>Revenue</th>
+                                <th>Sell-Through</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% topProducts.forEach(p=> { %>
+                                <% const sellThrough=((p.ordered / (p.ordered + p.variantInventoryQty)) *
+                                    100).toFixed(1); %>
+                                    <tr>
+                                        <td>
+                                            <%= p.title %>
+                                        </td>
+                                        <td>
+                                            <%= p.ordered %>
+                                        </td>
+                                        <td>
+                                            <%= p.variantInventoryQty %>
+                                        </td>
+                                        <td>€<%= (p.ordered * parseFloat(p.variantPrice)).toFixed(2) %>
+                                        </td>
+                                        <td>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width:<%= sellThrough %>%"></div>
+                                            </div>
+                                            <span class="text-muted">
+                                                <%= sellThrough %>%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <% }) %>
+                        </tbody>
+                    </table>
+                    <% } %>
+        </div>
+    </div>
+
+    <script>
+        const salesData = <% - JSON.stringify(salesOverTime) %>;
+        if (salesData.length > 0 && typeof Chart !== 'undefined') {
+            new Chart(document.getElementById('salesChart'), {
+                type: 'line',
+                data: {
+                    labels: salesData.map(d => d.month),
+                    datasets: [{
+                        label: 'Revenue (€)',
+                        data: salesData.map(d => parseFloat(d.total)),
+                        borderColor: '#36b084',
+                        backgroundColor: 'rgba(54,176,132,0.08)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#36b084',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                    }, {
+                        label: 'Orders',
+                        data: salesData.map(d => parseInt(d.orders)),
+                        borderColor: '#007aff',
+                        backgroundColor: 'rgba(0,122,255,0.05)',
+                        fill: false,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#007aff',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        yAxisID: 'y1',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#6e6e73',
+                                font: { family: 'Inter', size: 12, weight: '500' },
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                padding: 20,
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#fff',
+                            titleColor: '#1d1d1f',
+                            bodyColor: '#6e6e73',
+                            borderColor: 'rgba(0,0,0,0.08)',
+                            borderWidth: 1,
+                            cornerRadius: 10,
+                            padding: 12,
+                            titleFont: { family: 'Inter', weight: '600' },
+                            bodyFont: { family: 'Inter' },
+                            boxPadding: 6,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: '#86868b', font: { family: 'Inter', size: 11 } },
+                            grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
+                        },
+                        y: {
+                            ticks: { color: '#86868b', callback: v => '€' + v, font: { family: 'Inter', size: 11 } },
+                            grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
+                        },
+                        y1: {
+                            position: 'right',
+                            ticks: { color: '#86868b', font: { family: 'Inter', size: 11 } },
+                            grid: { drawOnChartArea: false, drawBorder: false }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+
+    <%- include('../layout-end') %>

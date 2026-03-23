@@ -1,0 +1,46 @@
+<%- include('../layout-start', { pageTitle: 'Bulk Price Update Tool' }) %>
+
+<div style="background:#fff;border-radius:12px;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.1);max-width:800px;margin: 0 auto;">
+    <h2 style="margin:0 0 16px;font-size:20px;color:#1a1a2e;">Paste WhatsApp Price List</h2>
+    <p style="color:#64748b;margin:0 0 24px;">Automatically parse region, brand, model, storage, color, and price from standard WhatsApp price lists.</p>
+
+    <form method="POST" action="/admin/bulk-price-update/parse">
+        <div style="margin-bottom: 24px;">
+            <label style="display:block;margin-bottom:8px;font-weight:600;color:#1a1a2e;">Raw Text Content</label>
+            <textarea 
+                name="rawText" 
+                rows="20" 
+                placeholder="Paste your price list here...&#10;&#10;Example:&#10;🇪🇺 EU SPEC&#10;APPLE - MARGIN VAT&#10;&#10;IPHONE 15 PRO MAX&#10;256 NATURAL TITANIUM 1100€&#10;512 BLACK TITANIUM 1250€"
+                style="width: 100%; padding: 16px; border: 1px solid #e2e8f0; border-radius: 8px; font-family: monospace; resize: vertical;"
+                required
+            ></textarea>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;">
+            <button type="submit" class="btn btn-primary" onclick="showLoading('Parsing text...')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:8px;">
+                    <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                    <line x1="9" y1="20" x2="15" y2="20"></line>
+                    <line x1="12" y1="4" x2="12" y2="20"></line>
+                </svg>
+                Parse Text
+            </button>
+        </div>
+    </form>
+</div>
+
+<div id="loadingOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;padding:32px 48px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+        <div style="width:40px;height:40px;border:3px solid #e5e7eb;border-top-color:#36b084;border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+        <p id="loadingText" style="margin:0;font-weight:500;color:#1a1a2e;font-size:15px;">Processing...</p>
+    </div>
+</div>
+<style>@keyframes spin { to { transform: rotate(360deg) } }</style>
+<script>
+    function showLoading(text) {
+        document.getElementById('loadingText').textContent = text || 'Processing...';
+        document.getElementById('loadingOverlay').style.display = 'flex';
+    }
+</script>
+
+<%- include('../layout-end') %>

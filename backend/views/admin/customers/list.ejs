@@ -1,0 +1,146 @@
+<%- include('../layout-start', { pageTitle: 'Customers' }) %>
+
+    <div class="page-actions">
+        <form action="/admin/customers" method="GET" class="search-form">
+            <input type="text" name="search" value="<%= typeof search !== 'undefined' ? search : '' %>"
+                placeholder="Search customers..." class="search-input">
+            <select name="status" class="filter-select">
+                <option value="">All Status</option>
+                <option value="pending" <%=typeof status !=='undefined' && status==='pending' ? 'selected' : '' %>
+                    >Pending</option>
+                <option value="approved" <%=typeof status !=='undefined' && status==='approved' ? 'selected' : '' %>
+                    >Approved</option>
+                <option value="declined" <%=typeof status !=='undefined' && status==='declined' ? 'selected' : '' %>
+                    >Declined</option>
+            </select>
+            <button type="submit" class="btn btn-sm btn-outline">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                Filter
+            </button>
+        </form>
+        <a href="/admin/customers/new" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Add Customer
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+            <% if (customers.length===0) { %>
+                <p class="empty-state">No customers found.</p>
+                <% } else { %>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Email</th>
+                                <th>Country</th>
+                                <th>CEO</th>
+                                <th>Tags</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% customers.forEach(c=> { %>
+                                <tr class="customer-row" data-id="<%= c.id %>" style="cursor: pointer;"
+                                    onclick="if(!event.target.closest('.actions,form,button,a'))window.location='/admin/customers/<%= c.id %>'">
+                                    <td style="font-weight:600;">
+                                        <%= c.companyName %>
+                                    </td>
+                                    <td>
+                                        <%= c.email %>
+                                    </td>
+                                    <td>
+                                        <%= c.country || '—' %>
+                                    </td>
+                                    <td>
+                                        <%= c.ceoName || '—' %>
+                                    </td>
+                                    <td>
+                                        <% if (c.tags && c.tags.length> 0) { %>
+                                            <div style="display:flex;flex-wrap:wrap;gap:3px;">
+                                                <% c.tags.forEach(tag=> { %>
+                                                    <span
+                                                        style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:10px;font-size:11px;border:1px solid #fde68a;">
+                                                        <%= tag %>
+                                                    </span>
+                                                    <% }) %>
+                                            </div>
+                                            <% } else { %>
+                                                <span class="text-muted" style="font-size:11px;">—</span>
+                                                <% } %>
+                                    </td>
+                                    <td><span class="badge badge-<%= c.status %>">
+                                            <%= c.status %>
+                                        </span></td>
+                                    <td class="actions" onclick="event.stopPropagation()">
+                                        <% if (c.status==='pending' ) { %>
+                                            <form method="POST" action="/admin/customers/<%= c.id %>/approve"
+                                                style="display:inline">
+                                                <button type="submit" class="btn btn-xs btn-success">Approve</button>
+                                            </form>
+                                            <button class="btn btn-xs btn-danger"
+                                                onclick="document.getElementById('decline-<%= c.id %>').style.display='flex'">
+                                                Decline
+                                            </button>
+                                            <% } %>
+                                                <a href="/admin/customers/<%= c.id %>/edit"
+                                                    class="btn btn-xs btn-outline">Edit</a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                    <% } %>
+        </div>
+    </div>
+
+    <% if (typeof pagination !=='undefined' && pagination.totalPages> 1) { %>
+        <div class="pagination">
+            <% for (let i=1; i <=pagination.totalPages; i++) { %>
+                <a href="?page=<%= i %><%= typeof search !== 'undefined' && search ? '&search=' + search : '' %><%= typeof status !== 'undefined' && status ? '&status=' + status : '' %>"
+                    class="page-btn <%= i === pagination.currentPage ? 'active' : '' %>">
+                    <%= i %>
+                </a>
+                <% } %>
+        </div>
+        <% } %>
+
+            <!-- Decline Modals -->
+            <% customers.forEach(c=> { %>
+                <% if (c.status==='pending' ) { %>
+                    <div id="decline-<%= c.id %>" class="modal" style="display:none;"
+                        onclick="if(event.target===this) this.style.display='none'">
+                        <div class="modal-content">
+                            <h3>Decline <%= c.companyName %>
+                            </h3>
+                            <p>Provide a reason for declining this customer.</p>
+                            <form method="POST" action="/admin/customers/<%= c.id %>/decline">
+                                <textarea name="reason" class="form-textarea" rows="3" required
+                                    placeholder="Reason for declination..."></textarea>
+                                <div class="form-actions" style="border-top:none;margin-top:16px;">
+                                    <button type="submit" class="btn btn-danger">Decline Customer</button>
+                                    <button type="button" class="btn btn-outline"
+                                        onclick="document.getElementById('decline-<%= c.id %>').style.display='none'">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <% } %>
+                        <% }) %>
+
+                            <div id="customerOverlay" class="customer-drawer-overlay"></div>
+                            <div id="customerDrawer" class="customer-drawer"></div>
+
+                            <%- include('../layout-end') %>

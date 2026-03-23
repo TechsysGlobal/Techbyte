@@ -1,0 +1,76 @@
+<%- include('../layout-start', { pageTitle: 'Categories' }) %>
+
+    <!-- Add Category -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Add Category</h2>
+        </div>
+        <div class="card-body">
+            <form action="/admin/categories" method="POST" class="inline-form">
+                <input type="text" name="name" required placeholder="Category name" class="input-sm">
+                <input type="text" name="image" placeholder="Image URL (optional)" class="input-sm" style="width:240px">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Categories Table -->
+    <div class="card">
+        <div class="card-body" style="padding:0;overflow-x:auto;">
+            <% if (categories.length===0) { %>
+                <p class="empty-state">No categories yet. Add one above!</p>
+                <% } else { %>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Slug</th>
+                                <th>Products</th>
+                                <th>Image</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% categories.forEach(c=> { %>
+                                <tr>
+                                    <td><strong>
+                                            <%= c.name %>
+                                        </strong></td>
+                                    <td><code><%= c.slug %></code></td>
+                                    <td>
+                                        <%= c._count ? c._count.products : 0 %>
+                                    </td>
+                                    <td>
+                                        <% if (c.image) { %><img src="<%= c.image %>" class="thumb">
+                                            <% } else { %><span class="text-muted">—</span>
+                                                <% } %>
+                                    </td>
+                                    <td class="actions">
+                                        <form method="POST" action="/admin/categories/<%= c.id %>" class="inline-form">
+                                            <input type="text" name="name" value="<%= c.name %>" class="input-sm"
+                                                style="width:120px">
+                                            <input type="text" name="image" value="<%= c.image || '' %>"
+                                                placeholder="Image URL" class="input-sm" style="width:160px">
+                                            <button type="submit" class="btn btn-xs btn-outline">Update</button>
+                                        </form>
+                                        <form method="POST" action="/admin/categories/<%= c.id %>/delete"
+                                            style="display:inline" onsubmit="return confirm('Delete category?')">
+                                            <button type="submit" class="btn btn-xs btn-danger">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                    <% } %>
+        </div>
+    </div>
+
+    <%- include('../layout-end') %>

@@ -1,0 +1,377 @@
+<% if (!locals.isAjax) { %>
+    <%- include('../layout-start', { pageTitle: customer.companyName }) %>
+        <% } else { %>
+            <div class="drawer-header">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <h2 style="margin:0;font-size:20px;font-weight:700;">
+                        <%= customer.companyName %>
+                    </h2>
+                    <span class="badge badge-<%= customer.status %>">
+                        <%= customer.status %>
+                    </span>
+                </div>
+                <button class="drawer-close" aria-label="Close">&times;</button>
+            </div>
+            <div class="drawer-content">
+                <% } %>
+                    <% if (typeof msg !=='undefined' && msg) { %>
+                        <div class="alert alert-success"
+                            style="margin-bottom:16px;padding:12px;background:#e6f4ea;color:#1e8e3e;border-radius:8px;font-weight:500;">
+                            <%= msg %>
+                        </div>
+                        <% } %>
+                            <% if (typeof error !=='undefined' && error) { %>
+                                <div class="alert alert-danger"
+                                    style="margin-bottom:16px;padding:12px;background:#fce8e6;color:#d93025;border-radius:8px;font-weight:500;">
+                                    <%= error %>
+                                </div>
+                                <% } %>
+
+                                    <div class="page-actions">
+                                        <div>
+                                            <span class="badge badge-<%= customer.status %>"
+                                                style="font-size:13px;padding:6px 16px;">
+                                                <%= customer.status %>
+                                            </span>
+                                            <% if (customer.approvedAt) { %>
+                                                <span class="text-muted" style="margin-left:10px;">Approved: <%= new
+                                                        Date(customer.approvedAt).toLocaleDateString() %></span>
+                                                <% } %>
+                                        </div>
+                                        <div style="display:flex;gap:8px;">
+                                            <% if (customer.status==='pending' ) { %>
+                                                <form method="POST" action="/admin/customers/<%= customer.id %>/approve"
+                                                    style="display:inline">
+                                                    <button type="submit"
+                                                        class="btn btn-sm btn-success">Approve</button>
+                                                </form>
+                                                <% } else if (customer.status==='approved' && !customer.passwordHash) {
+                                                    %>
+                                                    <form method="POST"
+                                                        action="/admin/customers/<%= customer.id %>/send-invite"
+                                                        style="display:inline">
+                                                        <button type="submit" class="btn btn-sm btn-success">Send
+                                                            Invite</button>
+                                                    </form>
+                                                    <% } %>
+                                                        <a href="/admin/customers/<%= customer.id %>/edit"
+                                                            class="btn btn-sm btn-primary">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14"
+                                                                height="14" viewBox="0 0 24 24" fill="none"
+                                                                stroke="currentColor" stroke-width="2"
+                                                                stroke-linecap="round" stroke-linejoin="round">
+                                                                <path
+                                                                    d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                                </path>
+                                                                <path
+                                                                    d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                                </path>
+                                                            </svg>
+                                                            Edit
+                                                        </a>
+                                                        <a href="/admin/customers"
+                                                            class="btn btn-sm btn-outline">Back</a>
+                                        </div>
+                                    </div>
+
+                                    <div class="detail-grid">
+                                        <!-- Company -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Company</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Company
+                                                        Name</span><span>
+                                                        <%= customer.companyName %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Login
+                                                        Email</span><span>
+                                                        <%= customer.email %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Phone</span><span>
+                                                        <%= customer.companyPhone || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Address</span><span>
+                                                        <%= customer.companyAddr || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Country</span><span>
+                                                        <%= customer.country || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Zip Code</span><span>
+                                                        <%= customer.zipCode || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Tax ID /
+                                                        VAT</span><span class="sensitive-field"
+                                                        data-value="<%= customer.taxId || '' %>">
+                                                        <% if (customer.taxId) { %>
+                                                            <code>****<%= customer.taxId.slice(-4) %></code>
+                                                            <button class="btn-reveal" onclick="revealField(this)"
+                                                                title="Reveal">👁</button>
+                                                            <% } else { %>—<% } %>
+                                                    </span></div>
+                                                <% if (customer.regCertUrl) { %>
+                                                    <div class="detail-row"><span class="detail-label">Registration
+                                                            Certificate</span><span>
+                                                            <a href="<%= customer.regCertUrl %>" target="_blank"
+                                                                class="btn btn-xs btn-outline" style="font-size:12px;">
+                                                                📄 View Certificate
+                                                            </a>
+                                                        </span></div>
+                                                    <% } %>
+                                            </div>
+                                        </div>
+
+                                        <!-- Bank Details -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Bank Details</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Bank
+                                                        Name</span><span>
+                                                        <%= customer.bankName || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Bank
+                                                        Country</span><span>
+                                                        <%= customer.bankCountry || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">IBAN</span><span
+                                                        class="sensitive-field"
+                                                        data-value="<%= customer.bankIban || '' %>">
+                                                        <% if (customer.bankIban) { %>
+                                                            <code>****<%= customer.bankIban.slice(-4) %></code>
+                                                            <button class="btn-reveal" onclick="revealField(this)"
+                                                                title="Reveal">👁</button>
+                                                            <% } else { %>—<% } %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Bank
+                                                        Address</span><span>
+                                                        <%= customer.bankAddress || '—' %>
+                                                    </span></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- CEO -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>CEO</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Name</span><span>
+                                                        <%= customer.ceoName || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Email</span><span>
+                                                        <%= customer.ceoEmail || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Phone</span><span>
+                                                        <%= customer.ceoPhone || '—' %>
+                                                    </span></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sales Contact -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Sales Contact</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Name</span><span>
+                                                        <%= customer.salesName || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Email</span><span>
+                                                        <%= customer.salesEmail || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Phone</span><span>
+                                                        <%= customer.salesPhone || '—' %>
+                                                    </span></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Purchase Contact -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Purchase Contact</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Name</span><span>
+                                                        <%= customer.purchaseName || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Email</span><span>
+                                                        <%= customer.purchaseEmail || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Phone</span><span>
+                                                        <%= customer.purchasePhone || '—' %>
+                                                    </span></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Logistics -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Logistics</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Name</span><span>
+                                                        <%= customer.logisticName || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Phone</span><span>
+                                                        <%= customer.logisticPhone || '—' %>
+                                                    </span></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Personal Information -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Personal Information</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row"><span class="detail-label">Name</span><span>
+                                                        <%= customer.personalName || '—' %>
+                                                    </span></div>
+                                                <div class="detail-row"><span class="detail-label">Phone</span><span>
+                                                        <%= customer.personalPhone || '—' %>
+                                                    </span></div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Customer Tags -->
+                                        <div class="card">
+                                            <div class="card-header">
+                                                <h3>Tags</h3>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="detail-row">
+                                                    <span class="detail-label">Assigned Tags</span>
+                                                    <span>
+                                                        <% if (customer.tags && customer.tags.length> 0) { %>
+                                                            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                                                <% customer.tags.forEach(tag=> { %>
+                                                                    <span
+                                                                        style="background:#fef3c7;color:#92400e;padding:3px 8px;border-radius:10px;font-size:12px;border:1px solid #fde68a;">
+                                                                        <%= tag %>
+                                                                    </span>
+                                                                    <% }) %>
+                                                            </div>
+                                                            <% } else { %>
+                                                                —
+                                                                <% } %>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Active Discounts -->
+                                    <% if (customer.customerDiscounts && customer.customerDiscounts.length> 0) { %>
+                                        <div class="card" style="margin-top: 24px;">
+                                            <div class="card-header">
+                                                <h3>Active Discounts</h3>
+                                            </div>
+                                            <div class="card-body" style="padding:0;overflow-x:auto;">
+                                                <table class="data-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Discount</th>
+                                                            <th>Value</th>
+                                                            <th>Type</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <% customer.customerDiscounts.forEach(d=> { %>
+                                                            <tr>
+                                                                <td><strong>
+                                                                        <%= d.discount.name %>
+                                                                    </strong></td>
+                                                                <td>
+                                                                    <%= d.discount.value %>
+                                                                </td>
+                                                                <td><span class="badge badge-active">
+                                                                        <%= d.discount.type %>
+                                                                    </span></td>
+                                                            </tr>
+                                                            <% }) %>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <% } %>
+
+                                            <!-- Order History -->
+                                            <% if (customer.orders && customer.orders.length> 0) { %>
+                                                <div class="card" style="margin-top: 24px;">
+                                                    <div class="card-header">
+                                                        <h3>Order History</h3>
+                                                    </div>
+                                                    <div class="card-body" style="padding:0;overflow-x:auto;">
+                                                        <table class="data-table">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Order ID</th>
+                                                                    <th>Total</th>
+                                                                    <th>Status</th>
+                                                                    <th>Date</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <% customer.orders.forEach(o=> { %>
+                                                                    <tr onclick="window.location='/admin/orders/<%= o.id %>'"
+                                                                        style="cursor:pointer;">
+                                                                        <td><code><%= o.id.substring(0, 8) %>...</code>
+                                                                        </td>
+                                                                        <td>€<%= parseFloat(o.totalAmount).toFixed(2) %>
+                                                                        </td>
+                                                                        <td><span
+                                                                                class="badge badge-<%= o.currentStatus %>">
+                                                                                <%= o.currentStatus %>
+                                                                            </span></td>
+                                                                        <td>
+                                                                            <%= new
+                                                                                Date(o.createdAt).toLocaleDateString()
+                                                                                %>
+                                                                        </td>
+                                                                    </tr>
+                                                                    <% }) %>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                                <% } %>
+
+                                                    <style>
+                                                        .btn-reveal {
+                                                            background: none;
+                                                            border: none;
+                                                            cursor: pointer;
+                                                            font-size: 14px;
+                                                            margin-left: 6px;
+                                                            padding: 2px 4px;
+                                                            vertical-align: middle;
+                                                        }
+
+                                                        .btn-reveal:hover {
+                                                            opacity: 0.7;
+                                                        }
+                                                    </style>
+                                                    <script>
+                                                        function revealField(btn) {
+                                                            const container = btn.closest('.sensitive-field');
+                                                            const value = container.dataset.value;
+                                                            if (btn.textContent.trim() === '👁') {
+                                                                container.querySelector('code').textContent = value;
+                                                                btn.textContent = '🔒';
+                                                                btn.title = 'Hide';
+                                                            } else {
+                                                                container.querySelector('code').textContent = '****' + value.slice(-4);
+                                                                btn.textContent = '👁';
+                                                                btn.title = 'Reveal';
+                                                            }
+                                                        }
+                                                    </script>
+
+                                                    <% if (!locals.isAjax) { %>
+                                                        <%- include('../layout-end') %>
+                                                            <% } else { %>
+            </div>
+            <% } %>

@@ -1,0 +1,41 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: '#3ec285', // --primary-color
+          dark: '#2a9d6e',    // --primary-dark
+        },
+        secondary: '#1e3a5f', // --secondary-color
+        text: {
+          dark: '#1a1a1a', // --text-dark
+          muted: '#6b7280', // --text-muted
+        },
+        bg: {
+          light: '#f3f4f6', // --bg-light
+          white: '#ffffff', // --bg-white
+        },
+        success: '#10b981', // --success-color
+        warning: '#f59e0b', // --warning-color
+        danger: '#ef4444',  // --danger-color
+        border: '#e5e7eb', // --border-color
+      },
+      fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+      },
+      container: {
+        center: true,
+        padding: '1.5rem',
+        screens: {
+          lg: '1280px',
+        },
+      },
+    },
+  },
+  plugins: [],
+}

@@ -1,0 +1,168 @@
+<%- include('../layout-start', { pageTitle: 'Discounts Management' }) %>
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+        <!-- Create Discount -->
+        <div class="card" style="margin-bottom: 0; width: 100%; max-width: 650px;">
+            <div class="card-header">
+                <h2 style="font-size: 16px; font-weight: 600;">Create New Discount</h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/discounts"
+                    style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+                    <div class="form-group" style="margin-bottom: 0; flex: 2; min-width: 150px;">
+                        <label style="font-size:12px;">Discount Name</label>
+                        <input type="text" name="name" required placeholder="e.g. Summer Sale"
+                            style="padding:8px 12px; font-size:13px;">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                        <label style="font-size:12px;">Type</label>
+                        <select name="type" class="filter-select"
+                            style="padding:8px 30px 8px 12px;font-size:13px; width: 100%;">
+                            <option value="PERCENTAGE">Percentage (%)</option>
+                            <option value="FIXED">Fixed Amount (€)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 100px;">
+                        <label style="font-size:12px;">Value</label>
+                        <input type="number" name="value" step="0.01" required placeholder="0.00"
+                            style="padding:8px 12px; font-size:13px;">
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary" style="height: 35px; white-space: nowrap;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Create
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <h3 class="section-title" style="margin-top: 32px;">Active & Draft Discounts</h3>
+
+    <% if (discounts.length===0) { %>
+        <div class="card">
+            <div class="card-body">
+                <p class="empty-state">No discounts created yet.</p>
+            </div>
+        </div>
+        <% } else { %>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px;">
+                <% discounts.forEach(d=> { %>
+                    <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column;">
+                        <div class="card-header"
+                            style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding: 20px 24px;">
+                            <div>
+                                <h3
+                                    style="font-size:16px; font-weight:600; margin-bottom: 6px; color:var(--text-primary);">
+                                    <%= d.name %>
+                                </h3>
+                                <span class="badge <%= d.active ? 'badge-active' : 'badge-draft' %>"
+                                    style="font-size: 11px; padding: 3px 10px;">
+                                    <%= d.active ? 'Active' : 'Inactive' %>
+                                </span>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size:24px; font-weight:700; color:var(--accent); line-height: 1;">
+                                    <% if (d.type==='PERCENTAGE' ) { %>
+                                        <%= d.value %>%<% } else { %>€<%= parseFloat(d.value).toFixed(2) %>
+                                                    <% } %>
+                                </div>
+                                <div class="text-muted"
+                                    style="font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; margin-top:4px;">
+                                    <%= d.type==='PERCENTAGE' ? 'Off Total' : 'Discount' %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body" style="flex: 1; display: flex; flex-direction: column; padding: 24px;">
+                            <div style="display: flex; gap: 8px; margin-bottom: 24px;">
+                                <form method="POST" action="/admin/discounts/<%= d.id %>/toggle"
+                                    style="flex: 1; margin: 0;">
+                                    <button type="submit"
+                                        class="btn btn-sm <%= d.active ? 'btn-outline' : 'btn-success' %>"
+                                        style="width:100%; justify-content:center;">
+                                        <%= d.active ? 'Deactivate' : 'Activate' %>
+                                    </button>
+                                </form>
+                                <form method="POST" action="/admin/discounts/<%= d.id %>/delete"
+                                    style="flex: 1; margin: 0;"
+                                    onsubmit="return confirm('Delete this discount? This action cannot be undone.')">
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                        style="width:100%; justify-content:center;">Delete</button>
+                                </form>
+                            </div>
+
+                            <div style="margin-bottom: 20px; flex: 1;">
+                                <h4
+                                    style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Assigned Customers (<%= d.customerDiscounts ? d.customerDiscounts.filter(cd=>
+                                        cd.isActive).length : 0 %>)</h4>
+                                <% if (d.customerDiscounts && d.customerDiscounts.filter(cd=>cd.isActive).length > 0) {
+                                    %>
+                                    <div
+                                        style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-xs); background: var(--bg-secondary);">
+                                        <% d.customerDiscounts.filter(cd=> cd.isActive).forEach(cd => { %>
+                                            <div
+                                                style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px;">
+                                                <div
+                                                    style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                                                    <div
+                                                        style="width:20px; height:20px; border-radius:50%; background:var(--accent-light); color:var(--accent); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; flex-shrink:0;">
+                                                        <%= cd.customer.companyName.charAt(0).toUpperCase() %>
+                                                    </div>
+                                                    <span
+                                                        style="font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                                                        title="<%= cd.customer.companyName %>">
+                                                        <%= cd.customer.companyName %>
+                                                    </span>
+                                                </div>
+                                                <form method="POST"
+                                                    action="/admin/discounts/customer/<%= cd.id %>/remove"
+                                                    style="margin: 0;">
+                                                    <button type="submit"
+                                                        style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:16px; line-height:1; opacity:0.7; padding:0 4px;"
+                                                        title="Remove">&times;</button>
+                                                </form>
+                                            </div>
+                                            <% }) %>
+                                    </div>
+                                    <% } else { %>
+                                        <div
+                                            style="padding: 16px; border: 1px dashed var(--border-strong); border-radius: var(--radius-xs); text-align: center; color: var(--text-muted); font-size: 13px; background: var(--bg-secondary);">
+                                            No customers assigned yet.
+                                        </div>
+                                        <% } %>
+                            </div>
+
+                            <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border);">
+                                <form method="POST" action="/admin/discounts/<%= d.id %>/assign"
+                                    style="display:flex; gap:8px; align-items: center; margin: 0;">
+                                    <div class="form-group" style="margin:0; flex:1;">
+                                        <select name="customerIds[]" class="filter-select"
+                                            style="width:100%; font-size:13px; padding:8px 12px;" required>
+                                            <option value="" disabled selected>Assign to customer...</option>
+                                            <% if (typeof customers !=='undefined' ) { customers.forEach(c=> { %>
+                                                <% const isAssigned=d.customerDiscounts && d.customerDiscounts.some(cd=>
+                                                    cd.isActive && cd.customerId === c.id); %>
+                                                    <% if (!isAssigned) { %>
+                                                        <option value="<%= c.id %>">
+                                                            <%= c.companyName %>
+                                                        </option>
+                                                        <% } %>
+                                                            <% }) } %>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-sm btn-primary"
+                                        style="height: 36px; padding: 0 16px;">Assign</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <% }) %>
+            </div>
+            <% } %>
+
+                <%- include('../layout-end') %>

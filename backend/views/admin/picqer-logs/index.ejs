@@ -1,0 +1,221 @@
+<%- include('../layout-start') %>
+
+<style>
+    /* ─── Picqer Logs Page Styles ─────────────────────────────────────────────── */
+    .logs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+    }
+
+    /* Action badges */
+    .action-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 12px;
+        border-radius: var(--radius-pill);
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
+    }
+
+    .action-badge.success {
+        background: rgba(52, 199, 89, 0.12);
+        color: var(--success);
+    }
+
+    .action-badge.ignored {
+        background: rgba(255, 159, 10, 0.12);
+        color: var(--warning);
+    }
+
+    .action-badge.error {
+        background: rgba(255, 59, 48, 0.12);
+        color: var(--danger);
+    }
+
+    /* SKU tag */
+    .sku-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 500;
+        background: var(--bg-primary);
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+        font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        gap: 4px;
+        justify-content: center;
+        margin-top: 24px;
+        list-style: none;
+        padding: 0;
+    }
+
+    .pagination a, .pagination span {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-xs);
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        transition: all var(--duration) var(--ease);
+        text-decoration: none;
+    }
+
+    .pagination a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--accent-light);
+    }
+
+    .pagination .active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+    }
+
+    .results-info {
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-top: 12px;
+    }
+</style>
+
+<div class="logs-header">
+    <div>
+        <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">Integration Logs</h2>
+        <p style="font-size: 13px; color: var(--text-muted);">View the strict FIFO stream of payload processing from Picqer and other manual syncs. Logs are automatically deleted after 7 days by pg_cron.</p>
+    </div>
+    <div style="display:flex; gap: 8px;">
+        <% 
+            const isAll = !locals.currentFilter || currentFilter === 'all'; 
+            const isWebhook = locals.currentFilter === 'webhook'; 
+            const isManual = locals.currentFilter === 'manual'; 
+
+            const activeStyle = 'padding: 6px 12px; border-radius: 6px; font-size: 13px; text-decoration: none; font-weight: 500; border: 1px solid var(--accent); background: var(--accent); color: white;';
+            const inactiveStyle = 'padding: 6px 12px; border-radius: 6px; font-size: 13px; text-decoration: none; font-weight: 500; border: 1px solid var(--border); background: white; color: var(--text-secondary);';
+        %>
+        
+        <a href="?filter=all" style="<%= isAll ? activeStyle : inactiveStyle %>">All Logs</a>
+        
+        <a href="?filter=webhook" style="<%= isWebhook ? activeStyle : inactiveStyle %>">Webhook Logs</a>
+        
+        <a href="?filter=manual" style="<%= isManual ? activeStyle : inactiveStyle %>">Manual Syncs</a>
+    </div>
+</div>
+
+<!-- Logs Table -->
+<div class="card">
+    <div class="card-body" style="padding: 0; overflow-x: auto;">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 180px;">Timestamp</th>
+                    <th style="width: 120px;">Status</th>
+                    <th style="width: 200px;">SKU</th>
+                    <th>Action Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (logs.length === 0) { %>
+                    <tr>
+                        <td colspan="4" style="text-align: center; padding: 48px 16px; color: var(--text-muted);">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"
+                                stroke-linejoin="round"
+                                style="opacity:0.3; margin-bottom: 12px; display: block; margin: 0 auto 12px;">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                <line x1="16" y1="2" x2="16" y2="6"></line>
+                                <line x1="8" y1="2" x2="8" y2="6"></line>
+                                <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                            No integration logs found.
+                        </td>
+                    </tr>
+                <% } %>
+
+                <% logs.forEach((log) => { %>
+                    <tr>
+                        <td>
+                            <div style="font-size: 13px; font-weight: 500;">
+                                <%= new Date(log.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %>
+                            </div>
+                            <div style="font-size: 11px; color: var(--text-muted);">
+                                <%= new Date(log.createdAt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) %>
+                            </div>
+                        </td>
+                        <td>
+                            <% const badgeClass = log.status ? log.status.toLowerCase() : 'ignored'; %>
+                            <span class="action-badge <%= badgeClass %>">
+                                <% if (log.status === 'Success') { %>
+                                    🟢 Success
+                                <% } else if (log.status === 'Ignored') { %>
+                                    🟡 Ignored
+                                <% } else { %>
+                                    🔴 Error
+                                <% } %>
+                            </span>
+                        </td>
+                        <td>
+                            <span class="sku-tag">
+                                <%= log.sku %>
+                            </span>
+                        </td>
+                        <td style="font-size: 13px; color: var(--text-primary); max-width: 400px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="<%= log.details %>">
+                            <%= log.details %>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+
+    <% if (totalPages > 1) { %>
+        <div class="card-footer" style="background: var(--bg-secondary); border-top: 1px solid var(--border); padding: 16px;">
+            <div class="pagination">
+                <% if (currentPage > 1) { %>
+                    <a href="?page=<%= currentPage - 1 %>">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    </a>
+                <% } %>
+    
+                <% 
+                let startPage = Math.max(1, currentPage - 2);
+                let endPage = Math.min(totalPages, startPage + 4);
+                if (endPage - startPage < 4) {
+                    startPage = Math.max(1, endPage - 4);
+                }
+                for(let i = startPage; i <= endPage; i++) { 
+                %>
+                    <a href="?page=<%= i %>" class="<%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+                <% } %>
+    
+                <% if (currentPage < totalPages) { %>
+                    <a href="?page=<%= currentPage + 1 %>">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                    </a>
+                <% } %>
+            </div>
+            <div class="results-info">
+                Showing page <%= currentPage %> of <%= totalPages %> (<%= totalCount %> total log entries)
+            </div>
+        </div>
+    <% } %>
+</div>
+
+<%- include('../layout-end') %>
