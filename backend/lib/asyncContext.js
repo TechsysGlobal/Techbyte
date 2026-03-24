@@ -1,19 +1,18 @@
-const { AsyncLocalStorage } = require('node:async_hooks');
+import { AsyncLocalStorage } from 'node:async_hooks';
 
 const asyncLocalStorage = new AsyncLocalStorage();
 
-module.exports = {
-    asyncLocalStorage,
-    /**
-     * Run a function within a context
-     * @param {Object} store - The context object (e.g. { adminId: '...' })
-     * @param {Function} callback - The function to run
-     */
-    run: (store, callback) => asyncLocalStorage.run(store, callback),
+export { asyncLocalStorage };
 
-    /**
-     * Get the current store
-     * @returns {Object|undefined}
-     */
-    getStore: () => asyncLocalStorage.getStore(),
-};
+/**
+ * Run a function within a context
+ * @param {Object} store - The context object (e.g. { adminId: '...' })
+ * @param {Function} callback - The function to run
+ */
+export const run = (store, callback) => asyncLocalStorage.run(store, callback);
+
+/**
+ * Get the current store
+ * @returns {Object|undefined}
+ */
+export const getStore = () => asyncLocalStorage.getStore();

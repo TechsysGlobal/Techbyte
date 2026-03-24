@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
 
 // GET /admin/emails — Email templates list
 router.get('/', async (req, res) => {
@@ -75,4 +76,4 @@ router.post('/:id/delete', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

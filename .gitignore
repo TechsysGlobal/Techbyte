@@ -48,3 +48,6 @@ npm-debug.log*
 **/debug_parser.js
 **/verify_*.js
 **/test-*.js
+
+./EmailJS.txt
+emailjs.txt

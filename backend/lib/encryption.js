@@ -5,7 +5,7 @@
  * Requires ENCRYPTION_KEY env var (32-byte hex string, 64 hex chars).
  * Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
  */
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
@@ -24,7 +24,7 @@ function getKey() {
  * @param {string} text - plaintext to encrypt
  * @returns {string} encrypted string in format: iv:authTag:ciphertext (all hex)
  */
-function encrypt(text) {
+export function encrypt(text) {
     if (!text) return text;
     const key = getKey();
     const iv = crypto.randomBytes(IV_LENGTH);
@@ -42,7 +42,7 @@ function encrypt(text) {
  * @param {string} encryptedText - encrypted string in format: iv:authTag:ciphertext
  * @returns {string} decrypted plaintext
  */
-function decrypt(encryptedText) {
+export function decrypt(encryptedText) {
     if (!encryptedText || !encryptedText.includes(':')) return encryptedText;
     const key = getKey();
 
@@ -61,5 +61,3 @@ function decrypt(encryptedText) {
 
     return decrypted;
 }
-
-module.exports = { encrypt, decrypt };

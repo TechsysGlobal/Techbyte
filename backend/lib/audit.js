@@ -1,4 +1,4 @@
-const prisma = require('./prisma');
+import prisma from './prisma.js';
 
 /**
  * Manually logs an activity to the audit trail.
@@ -8,7 +8,7 @@ const prisma = require('./prisma');
  * @param {string} entityId - The ID of the entity
  * @param {object} details - JSON details
  */
-async function logActivity(adminId, action, entity, entityId, details) {
+export async function logActivity(adminId, action, entity, entityId, details) {
     try {
         await prisma.activityLog.create({
             data: {
@@ -24,5 +24,3 @@ async function logActivity(adminId, action, entity, entityId, details) {
         console.error('[Audit] Failed to log manual activity:', err);
     }
 }
-
-module.exports = { logActivity };

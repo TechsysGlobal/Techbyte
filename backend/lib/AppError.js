@@ -2,7 +2,7 @@
  * Custom application error class for consistent error handling.
  * Supports error classification (validation, auth, notFound, server).
  */
-class AppError extends Error {
+export default class AppError extends Error {
     constructor(message, statusCode = 500, code = 'SERVER_ERROR') {
         super(message);
         this.statusCode = statusCode;
@@ -34,5 +34,3 @@ class AppError extends Error {
         return new AppError(message, 429, 'RATE_LIMIT');
     }
 }
-
-module.exports = AppError;

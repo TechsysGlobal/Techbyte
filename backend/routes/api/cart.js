@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
 
 // POST /api/cart/validate — Validate cart items (check stock, get latest prices)
 router.post('/validate', async (req, res) => {
@@ -82,4 +83,4 @@ router.post('/validate', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

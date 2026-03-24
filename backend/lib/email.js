@@ -1,5 +1,5 @@
-const nodemailer = require('nodemailer');
-const prisma = require('./prisma');
+import nodemailer from 'nodemailer';
+import prisma from './prisma.js';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.office365.com',
@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
  * @param {string} subject - Email subject
  * @param {string} html - Email HTML body
  */
-async function sendEmail(to, subject, html) {
+export async function sendEmail(to, subject, html) {
   try {
     await transporter.sendMail({
       from: `"TechByte Admin" <${process.env.SMTP_USER}>`,
@@ -57,7 +57,7 @@ async function sendEmail(to, subject, html) {
 /**
  * Notify admin that a new customer registered
  */
-async function notifyAdminNewRegistration(customer) {
+export async function notifyAdminNewRegistration(customer) {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #1a1a2e; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -83,7 +83,7 @@ async function notifyAdminNewRegistration(customer) {
 /**
  * Send approval email to customer with password-set link
  */
-async function sendApprovalEmail(customer) {
+export async function sendApprovalEmail(customer) {
   const setPasswordUrl = `${process.env.APP_URL || 'http://localhost:3000'}/api/auth/set-password?token=${customer.id}`;
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -110,7 +110,7 @@ async function sendApprovalEmail(customer) {
 /**
  * Send decline email to customer with reason
  */
-async function sendDeclineEmail(customer, reason) {
+export async function sendDeclineEmail(customer, reason) {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #1a1a2e; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -132,7 +132,7 @@ async function sendDeclineEmail(customer, reason) {
 /**
  * Send password setup email to new admin-created customer
  */
-async function sendPasswordSetupEmail(email, setupLink) {
+export async function sendPasswordSetupEmail(email, setupLink) {
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #1a1a2e; color: #fff; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -153,11 +153,3 @@ async function sendPasswordSetupEmail(email, setupLink) {
   `;
   await sendEmail(email, 'Welcome to TechByte - Set Your Password', html);
 }
-
-module.exports = {
-  sendEmail,
-  notifyAdminNewRegistration,
-  sendApprovalEmail,
-  sendDeclineEmail,
-  sendPasswordSetupEmail,
-};

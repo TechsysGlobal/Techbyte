@@ -1,11 +1,11 @@
-const { run } = require('../lib/asyncContext');
+import { run } from '../lib/asyncContext.js';
 
 /**
  * Middleware to wrap the request in an AsyncLocalStorage context.
  * It extracts the adminId from the session and makes it available
  * to the Prisma Extension.
  */
-function auditContext(req, res, next) {
+export default function auditContext(req, res, next) {
     const adminId = req.session?.adminId;
     const store = { adminId };
 
@@ -13,5 +13,3 @@ function auditContext(req, res, next) {
         next();
     });
 }
-
-module.exports = auditContext;

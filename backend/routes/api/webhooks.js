@@ -1,8 +1,9 @@
-const express = require('express');
-const crypto = require('crypto');
+import express from 'express';
+import crypto from 'crypto';
+import prisma from '../../lib/prisma.js';
+import logger from '../../lib/logger.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const logger = require('../../lib/logger');
 
 router.post('/picqer/stock', async (req, res) => {
   try {
@@ -56,4 +57,4 @@ router.post('/picqer/stock', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

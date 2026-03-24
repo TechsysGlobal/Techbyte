@@ -1,5 +1,5 @@
-const { z } = require('zod');
-const xss = require('xss');
+import { z } from 'zod';
+import xss from 'xss';
 
 // Sanitize helper to prevent XSS in string inputs
 const sanitizeString = z.string().transform((val) => xss(val.trim()));
@@ -70,7 +70,7 @@ const setPasswordSchema = z.object({
     path: ["token"]
 });
 
-module.exports = {
+export {
     registrationSchema,
     loginSchema,
     setPasswordSchema,

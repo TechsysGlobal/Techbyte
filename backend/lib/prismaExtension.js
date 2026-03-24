@@ -1,15 +1,17 @@
-const { Prisma } = require('@prisma/client');
-const { getStore } = require('./asyncContext');
-const cache = require('./cache'); // Import cache for invalidation
+import { Prisma } from '@prisma/client';
+import { getStore } from './asyncContext.js';
+import cache from './cache.js'; // Import cache for invalidation
 
 const MODELS_TO_AUDIT = ['Product', 'Order', 'User', 'Discount'];
 
-module.exports = Prisma.defineExtension((client) => {
+export default Prisma.defineExtension((client) => {
     return client.$extends({
         name: 'audit-log',
         query: {
             $allModels: {
                 async $allOperations({ model, operation, args, query }) {
+                    // ... (rest of the code stays exactly the same)
+                    // (I'll just replace the module.exports and requires)
                     // Only audit specific models and write operations
                     if (!MODELS_TO_AUDIT.includes(model) || !['create', 'update', 'delete', 'upsert', 'createMany', 'updateMany', 'deleteMany'].includes(operation)) {
                         return query(args);

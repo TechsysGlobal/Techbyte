@@ -1,10 +1,11 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import ExcelJS from 'exceljs';
+import multer from 'multer';
+import { logActivity } from '../../lib/audit.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const ExcelJS = require('exceljs');
-const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-const { logActivity } = require('../../lib/audit');
 
 // ─── Column Definitions ─────────────────────────────────────────────────────
 const COLUMNS = [
@@ -407,4 +408,4 @@ function buildProductData(row) {
     };
 }
 
-module.exports = router;
+export default router;

@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
 
 // GET /admin/discounts
 router.get('/', async (req, res) => {
@@ -115,4 +116,4 @@ router.post('/customer/:id/remove', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import supabase from '../../lib/supabase.js';
+import multer from 'multer';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const supabase = require('../../lib/supabase');
-const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // GET /admin/brands
@@ -95,4 +96,4 @@ router.post('/:id/delete', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

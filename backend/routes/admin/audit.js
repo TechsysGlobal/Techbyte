@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
 
 // ─── Action-to-Category Mapping ─────────────────────────────────────────────
 const ACTION_CATEGORIES = {
@@ -169,4 +170,4 @@ router.get('/', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

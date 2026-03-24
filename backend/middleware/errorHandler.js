@@ -30,4 +30,4 @@ const errorHandler = (err, req, res, next) => {
     res.status(statusCode).render('admin/error', { error: message });
 };
 
-module.exports = errorHandler;
+export default errorHandler;

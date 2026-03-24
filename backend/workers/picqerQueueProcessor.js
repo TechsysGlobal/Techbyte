@@ -1,5 +1,5 @@
-const prisma = require('../lib/prisma');
-const logger = require('../lib/logger');
+import prisma from '../lib/prisma.js';
+import logger from '../lib/logger.js';
 
 const QUEUE_NAME = 'picqer_webhook_queue';
 const MIN_POLL_INTERVAL_MS = 2000; // 2 seconds
@@ -155,6 +155,6 @@ async function startWorker() {
   pollQueue();
 }
 
-module.exports = {
+export {
   startWorker
 };

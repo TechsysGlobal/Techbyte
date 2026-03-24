@@ -1,16 +1,12 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import supabase from '../../lib/supabase.js';
+import multer from 'multer';
+import * as picqerClient from '../../lib/picqerClient.js';
+import logger from '../../lib/logger.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const supabase = require('../../lib/supabase');
-const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
-
-// Dropdown options (match DB values after prefix stripping)
-const WARRANTIES = ['No Warranty', '1 Year Global Warranty', 'Factory Warranty'];
-const REGIONS = ['Eu', 'Non-Eu'];
-
-const picqerClient = require('../../lib/picqerClient');
-const logger = require('../../lib/logger');
 
 // Allowed warehouse IDs from env (same list the webhook processor uses)
 const ALLOWED_WAREHOUSE_IDS = (process.env.PICQER_ALLOWED_WAREHOUSE_IDS || '')
@@ -392,4 +388,4 @@ router.post('/:id/remove-tag', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

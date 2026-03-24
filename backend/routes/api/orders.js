@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import { syncOrderToPicqer } from '../../lib/picqerCheckout.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const { syncOrderToPicqer } = require('../../lib/picqerCheckout');
 
 // Auth middleware
 function requireAuth(req, res, next) {
@@ -148,4 +149,4 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

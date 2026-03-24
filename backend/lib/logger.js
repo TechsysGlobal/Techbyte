@@ -1,13 +1,9 @@
-/**
- * Structured logger using pino.
- * Falls back to console-based logging if pino is not installed.
- */
-let logger;
+import pino from 'pino';
 
 const isProd = process.env.NODE_ENV === 'production';
+let logger;
 
 try {
-    const pino = require('pino');
     logger = pino({
         // In production, only log warnings/errors to stdout/stderr.
         level: isProd ? 'warn' : (process.env.LOG_LEVEL || 'info'),
@@ -26,4 +22,4 @@ try {
     };
 }
 
-module.exports = logger;
+export default logger;

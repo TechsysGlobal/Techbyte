@@ -1,8 +1,24 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import supabase from '../../lib/supabase.js';
+import auditContext from '../../middleware/auditContext.js';
+
+// Sub-router imports
+import importExportRoutes from './importExport.js';
+import productsRoutes from './products.js';
+import bulkPriceRoutes from './bulk-price-update.js';
+import customersRoutes from './customers.js';
+import categoriesRoutes from './categories.js';
+import brandsRoutes from './brands.js';
+import discountsRoutes from './discounts.js';
+import analyticsRoutes from './analytics.js';
+import emailsRoutes from './emails.js';
+import auditLogRoutes from './audit.js';
+import picqerLogsRoutes from './picqer-logs.js';
+import ordersRoutes from './orders.js';
+import visibilityRoutes from './visibility.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const supabase = require('../../lib/supabase');
-const auditContext = require('../../middleware/auditContext');
 
 // ─── Admin Auth Middleware ───────────────────────────────────────────────────
 
@@ -93,18 +109,18 @@ router.get('/', requireAdmin, async (req, res) => {
 });
 
 // ─── Mount sub-routers ──────────────────────────────────────────────────────
-router.use('/products', requireAdmin, require('./importExport'));
-router.use('/products', requireAdmin, require('./products'));
-router.use('/bulk-price-update', requireAdmin, require('./bulk-price-update'));
-router.use('/customers', requireAdmin, require('./customers'));
-router.use('/categories', requireAdmin, require('./categories'));
-router.use('/brands', requireAdmin, require('./brands'));
-router.use('/discounts', requireAdmin, require('./discounts'));
-router.use('/analytics', requireAdmin, require('./analytics'));
-router.use('/emails', requireAdmin, require('./emails'));
-router.use('/audit', requireAdmin, require('./audit'));
-router.use('/picqer-logs', requireAdmin, require('./picqer-logs'));
-router.use('/orders', requireAdmin, require('./orders'));
-router.use('/visibility', requireAdmin, require('./visibility'));
+router.use('/products', requireAdmin, importExportRoutes);
+router.use('/products', requireAdmin, productsRoutes);
+router.use('/bulk-price-update', requireAdmin, bulkPriceRoutes);
+router.use('/customers', requireAdmin, customersRoutes);
+router.use('/categories', requireAdmin, categoriesRoutes);
+router.use('/brands', requireAdmin, brandsRoutes);
+router.use('/discounts', requireAdmin, discountsRoutes);
+router.use('/analytics', requireAdmin, analyticsRoutes);
+router.use('/emails', requireAdmin, emailsRoutes);
+router.use('/audit', requireAdmin, auditLogRoutes);
+router.use('/picqer-logs', requireAdmin, picqerLogsRoutes);
+router.use('/orders', requireAdmin, ordersRoutes);
+router.use('/visibility', requireAdmin, visibilityRoutes);
 
-module.exports = router;
+export default router;

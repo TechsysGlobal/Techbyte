@@ -1,9 +1,10 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import supabase from '../../lib/supabase.js';
+import { sendApprovalEmail, sendDeclineEmail, sendPasswordSetupEmail } from '../../lib/email.js';
+import { logActivity } from '../../lib/audit.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const supabase = require('../../lib/supabase');
-const { sendApprovalEmail, sendDeclineEmail, sendPasswordSetupEmail } = require('../../lib/email');
-const { logActivity } = require('../../lib/audit');
 
 // GET /admin/customers — Customer List
 router.get('/', async (req, res) => {
@@ -407,4 +408,4 @@ router.post('/:id/delete', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

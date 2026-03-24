@@ -1,17 +1,38 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const session = require('express-session');
-const PgSession = require('connect-pg-simple')(session);
-const multer = require('multer');
-const logger = require('./lib/logger');
-const errorHandler = require('./middleware/errorHandler');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import multer from 'multer';
+import logger from './lib/logger.js';
+import errorHandler from './middleware/errorHandler.js';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { dirname } from 'path';
+
+// Route imports
+import webhookRoutes from './routes/api/webhooks.js';
+import productRoutes from './routes/api/products.js';
+import categoryRoutes from './routes/api/categories.js';
+import brandRoutes from './routes/api/brands.js';
+import authRoutes from './routes/api/auth.js';
+import orderRoutes from './routes/api/orders.js';
+import cartRoutes from './routes/api/cart.js';
+import contactRoutes from './routes/api/contact.js';
+import userRoutes from './routes/api/users.js';
+import healthRoutes from './routes/api/health.js';
+import adminRoutes from './routes/admin/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const PgSession = connectPgSimple(session);
 
 // Rate limiting (graceful fallback if not installed)
 let rateLimit;
 try {
-    rateLimit = require('express-rate-limit');
+    const { rateLimit: rl } = await import('express-rate-limit');
+    rateLimit = rl;
 } catch {
     rateLimit = null;
     logger.warn('express-rate-limit not installed — rate limiting disabled. Run: npm install express-rate-limit');
@@ -81,30 +102,25 @@ app.use((req, res, next) => {
 });
 
 // ─── View Engine ─────────────────────────────────────────────────────────────
-// NOTE (Scaling): Session store is already Postgres (multi-instance ready).
-// Before horizontal scaling, replace:
-// - node-cache → Redis (for shared cache across instances)
-// - multer memoryStorage → Supabase Storage (for persistent file uploads)
-
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 
 // API routes (JSON)
-app.use('/api/webhooks', require('./routes/api/webhooks'));
-app.use('/api/products', require('./routes/api/products'));
-app.use('/api/categories', require('./routes/api/categories'));
-app.use('/api/brands', require('./routes/api/brands'));
-app.use('/api/auth', require('./routes/api/auth'));
-app.use('/api/orders', require('./routes/api/orders'));
-app.use('/api/cart', require('./routes/api/cart'));
-app.use('/api/contact', require('./routes/api/contact'));
-app.use('/api/users', require('./routes/api/users'));
-app.use('/api/health', require('./routes/api/health'));
+app.use('/api/webhooks', webhookRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/brands', brandRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/health', healthRoutes);
 
 // Admin routes (EJS SSR)
-app.use('/admin', require('./routes/admin'));
+app.use('/admin', adminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -145,6 +161,21 @@ app.listen(PORT, () => {
     logger.info(`Admin: http://localhost:${PORT}/admin`);
 
     // Start background workers
-    const { startWorker } = require('./workers/picqerQueueProcessor');
-    startWorker();
+    const workerFiles = [
+        'picqerQueueProcessor.js'
+    ];
+
+    for (const file of workerFiles) {
+        const workerPath = path.join(__dirname, 'workers', file);
+        import(pathToFileURL(workerPath).href)
+            .then(worker => {
+                if (worker.startWorker) {
+                    worker.startWorker();
+                    logger.info(`[Worker] Started ${file}`);
+                } else {
+                    logger.warn(`[Worker] ${file} does not export startWorker()`);
+                }
+            })
+            .catch(err => logger.error(`[Worker] Failed to load ${file}: ${err.message}`));
+    }
 });

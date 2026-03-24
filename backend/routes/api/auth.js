@@ -1,12 +1,13 @@
-const express = require('express');
+import express from 'express';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import prisma from '../../lib/prisma.js';
+import supabase from '../../lib/supabase.js';
+import { encrypt } from '../../lib/encryption.js';
+import { notifyAdminNewRegistration, sendApprovalEmail, sendDeclineEmail } from '../../lib/email.js';
+import { registrationSchema, loginSchema, passwordSchema, setPasswordSchema } from '../../lib/validators.js';
+
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
-const prisma = require('../../lib/prisma');
-const supabase = require('../../lib/supabase');
-const { encrypt } = require('../../lib/encryption');
-const { notifyAdminNewRegistration, sendApprovalEmail, sendDeclineEmail } = require('../../lib/email');
-const { registrationSchema, loginSchema, passwordSchema, setPasswordSchema } = require('../../lib/validators');
 
 // POST /api/auth/register — Business registration
 router.post('/register', async (req, res) => {
@@ -277,4 +278,4 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

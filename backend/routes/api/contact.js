@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import { sendEmail } from '../../lib/email.js';
+
 const router = express.Router();
-const { sendEmail } = require('../../lib/email');
 
 // POST /api/contact — Send contact form email
 router.post('/', async (req, res) => {
@@ -41,4 +42,4 @@ router.post('/', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

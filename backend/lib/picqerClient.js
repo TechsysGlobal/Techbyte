@@ -5,7 +5,7 @@
  * Every request enforces a strict 5-second timeout via AbortController
  * to prevent hanging the checkout flow if Picqer's API degrades.
  */
-const logger = require('./logger');
+import logger from './logger.js';
 
 const PICQER_BASE_URL = process.env.PICQER_BASE_URL; // e.g. https://unity-trading.picqer.com/api/v1
 const PICQER_API_KEY = process.env.PICQER_API_KEY;
@@ -125,7 +125,7 @@ async function getProducts(offset = 0) {
   return picqerRequest('GET', `/products?offset=${offset}`);
 }
 
-module.exports = {
+export {
   createCustomer,
   createOrder,
   processOrder,

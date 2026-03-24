@@ -10,9 +10,9 @@
  *   Phase B: Order Push + Process (concept → processing)
  *   Phase C: B2B Order Fields (optional PO number / shipping notes)
  */
-const prisma = require('./prisma');
-const logger = require('./logger');
-const picqer = require('./picqerClient');
+import prisma from './prisma.js';
+import logger from './logger.js';
+import * as picqer from './picqerClient.js';
 
 // Allowed warehouse IDs from env (same list the webhook processor uses)
 const ALLOWED_WAREHOUSE_IDS = (process.env.PICQER_ALLOWED_WAREHOUSE_IDS || '')
@@ -334,6 +334,6 @@ async function syncOrderToPicqer(order, userId, meta = {}) {
   }
 }
 
-module.exports = {
+export {
   syncOrderToPicqer,
 };

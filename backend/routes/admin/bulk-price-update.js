@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import logger from '../../lib/logger.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const logger = require('../../lib/logger');
 
 // ── Helpers ────────────────────────────────────────────────────────────
 const emojiRegex = /[\p{Extended_Pictographic}\uFE00-\uFE0F\u2060]/gu;
@@ -298,4 +299,4 @@ router.post('/confirm', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

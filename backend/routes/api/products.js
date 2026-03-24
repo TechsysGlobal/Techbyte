@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import cache from '../../lib/cache.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const cache = require('../../lib/cache');
 
 // Helper to sort storage values numerically (e.g. 64GB < 128GB < 1TB)
 const sortStorageOptions = (storagesArray) => {
@@ -317,4 +318,4 @@ router.get('/:handle', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

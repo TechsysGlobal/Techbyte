@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import cache from '../../lib/cache.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const cache = require('../../lib/cache');
 
 // GET /api/brands
 router.get('/', async (req, res) => {
@@ -42,4 +43,4 @@ router.get('/:slug', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

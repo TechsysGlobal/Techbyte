@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
 
 // Need to match folder depth and layout standards for Admin pages
 router.get('/', async (req, res) => {
@@ -54,4 +55,4 @@ router.get('/', async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

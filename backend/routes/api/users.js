@@ -1,7 +1,8 @@
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+import logger from '../../lib/logger.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
-const logger = require('../../lib/logger');
 
 /**
  * Middleware to require either the user themselves or an admin
@@ -87,4 +88,4 @@ router.post('/:id/anonymize', requireSelfOrAdmin, async (req, res) => {
     }
 });
 
-module.exports = router;
+export default router;

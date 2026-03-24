@@ -2,9 +2,10 @@
  * Health check endpoint.
  * Returns database status, uptime, and memory usage.
  */
-const express = require('express');
+import express from 'express';
+import prisma from '../../lib/prisma.js';
+
 const router = express.Router();
-const prisma = require('../../lib/prisma');
 
 router.get('/', async (req, res) => {
     const health = {
@@ -30,4 +31,4 @@ router.get('/', async (req, res) => {
     res.status(statusCode).json(health);
 });
 
-module.exports = router;
+export default router;

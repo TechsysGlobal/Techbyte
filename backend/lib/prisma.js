@@ -1,8 +1,16 @@
-const { PrismaClient } = require('@prisma/client');
-const auditLogExtension = require('./prismaExtension');
+import 'dotenv/config';
+import { PrismaClient } from '../src/generated/prisma/client.ts';
+import { PrismaPg } from '@prisma/adapter-pg';
+import pg from 'pg';
+import auditLogExtension from './prismaExtension.js';
 
-const basePrisma = new PrismaClient();
+const { Pool } = pg;
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+
+// Initialize the v7 client with the Postgres adapter
+const basePrisma = new PrismaClient({ adapter });
 
 const prisma = basePrisma.$extends(auditLogExtension);
 
-module.exports = prisma;
+export default prisma;
