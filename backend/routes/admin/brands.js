@@ -13,7 +13,7 @@ router.get('/', async (req, res) => {
         const brandsWithCount = await Promise.all(
             brands.map(async b => ({
                 ...b,
-                productCount: await prisma.product.count({ where: { brand: b.name } }),
+                productCount: await prisma.product.count({ where: { brandId: b.id } }),
             }))
         );
         res.render('admin/brands/list', { brands: brandsWithCount, error: null });
@@ -28,7 +28,7 @@ router.get('/:slug', async (req, res) => {
         const brand = await prisma.brand.findUnique({ where: { slug: req.params.slug } });
         if (!brand) return res.redirect('/admin/brands');
         const products = await prisma.product.findMany({
-            where: { brand: brand.name },
+            where: { brandId: brand.id },
             orderBy: { title: 'asc' },
         });
         res.render('admin/brands/detail', { brand, products });
@@ -40,7 +40,11 @@ router.get('/:slug', async (req, res) => {
 // POST /admin/brands — Create
 router.post('/', upload.single('logo'), async (req, res) => {
     try {
-        const { name } = req.body;
+        const name = req.body.name?.trim();
+        if (!name) {
+            return res.redirect('/admin/brands');
+        }
+
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         let logoUrl = null;
 
@@ -59,6 +63,20 @@ router.post('/', upload.single('logo'), async (req, res) => {
     } catch (err) {
         console.error('Create brand error:', err);
         res.redirect('/admin/brands');
+    }
+});
+
+// POST /admin/brands/api — Create via JSON (for product form)
+router.post('/api', async (req, res) => {
+    try {
+        const name = req.body.name?.trim();
+        if (!name) return res.status(400).json({ error: 'Name is required' });
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const brand = await prisma.brand.create({ data: { name, slug } });
+        res.json(brand);
+    } catch (err) {
+        console.error('Create brand API error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 

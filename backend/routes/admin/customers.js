@@ -1,10 +1,48 @@
 import express from 'express';
 import prisma from '../../lib/prisma.js';
 import supabase from '../../lib/supabase.js';
-import { sendApprovalEmail, sendDeclineEmail, sendPasswordSetupEmail } from '../../lib/email.js';
+import { sendDeclineEmail } from '../../lib/email.js';
 import { logActivity } from '../../lib/audit.js';
 
 const router = express.Router();
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+const normalizeEmail = (email) => email.trim().toLowerCase();
+
+const isExistingAuthUserError = (error) => {
+    if (!error) return false;
+    const message = error.message || '';
+    return error.code === 'email_exists' || /already registered|already exists/i.test(message);
+};
+
+const buildCustomerDisplayName = (customer) => {
+    return customer.personalName || customer.ceoName || customer.companyName || normalizeEmail(customer.email);
+};
+
+async function ensureAuthUser(customer) {
+    const email = normalizeEmail(customer.email);
+    const { error } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { name: buildCustomerDisplayName(customer) },
+    });
+
+    if (error && !isExistingAuthUserError(error)) {
+        throw new Error(`Auth Error: ${error.message}`);
+    }
+}
+
+async function sendPasswordSetupInvite(customer) {
+    const email = normalizeEmail(customer.email);
+    await ensureAuthUser({ ...customer, email });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${FRONTEND_URL}/reset-password`,
+    });
+
+    if (error) {
+        throw new Error(`Supabase Email Error: ${error.message}`);
+    }
+}
 
 // GET /admin/customers — Customer List
 router.get('/', async (req, res) => {
@@ -51,27 +89,17 @@ router.get('/new', (req, res) => {
 // POST /admin/customers — Create Customer (auto-approved)
 router.post('/', async (req, res) => {
     try {
-        const data = req.body;
+        const data = {
+            ...req.body,
+            email: normalizeEmail(req.body.email),
+        };
 
-        // 1. Create Supabase Auth User
-        const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-            email: data.email,
-            email_confirm: true,
-            user_metadata: { name: data.personalName || data.ceoName || data.companyName }
-        });
-        if (authError) throw new Error('Auth Error: ' + authError.message);
+        // 1. Ensure the auth user exists before we send a setup link
+        await ensureAuthUser(data);
 
-        // 2. Generate Password Setup Link
-        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
-            type: 'recovery',
-            email: data.email
-        });
-        if (linkError) throw new Error('Link Gen Error: ' + linkError.message);
-
-        // 3. Create Profile in DB (linked to Auth ID)
-        await prisma.user.create({
+        // 2. Create customer in DB
+        const customer = await prisma.user.create({
             data: {
-                id: authUser.user.id, // Link to Supabase Auth ID
                 email: data.email,
                 companyName: data.companyName,
                 companyPhone: data.companyPhone,
@@ -96,18 +124,17 @@ router.post('/', async (req, res) => {
                 logisticName: data.logisticName,
                 logisticPhone: data.logisticPhone,
                 personalName: data.personalName,
-                personalEmail: data.personalEmail || null,
                 personalPhone: data.personalPhone,
                 status: 'approved',
                 approvedAt: new Date(),
             },
         });
 
-        // 4. Send Welcome Email
-        await sendPasswordSetupEmail(data.email, linkData.properties.action_link);
+        // 3. Let Supabase Auth send the password setup email
+        await sendPasswordSetupInvite(data);
 
-        // 5. Log activity
-        await logActivity(req.session.adminId, 'CUSTOMER_CREATED', 'User', authUser.user.id, {
+        // 4. Log activity
+        await logActivity(req.session.adminId, 'CUSTOMER_CREATED', 'User', customer.id, {
             companyName: data.companyName,
             email: data.email,
             method: 'admin_manual',
@@ -145,8 +172,6 @@ router.get('/:id', async (req, res) => {
             customer,
             isAjax,
             pageTitle: isAjax ? null : customer.companyName,
-            msg: req.query.msg || null,
-            error: req.query.error || null
         });
     } catch (err) {
         console.error('Customer detail error:', err);
@@ -184,7 +209,7 @@ router.post('/:id/update', async (req, res) => {
         await prisma.user.update({
             where: { id: req.params.id },
             data: {
-                email: data.email,
+                email: normalizeEmail(data.email),
                 companyName: data.companyName,
                 companyPhone: data.companyPhone,
                 companyAddr: data.companyAddr,
@@ -208,7 +233,6 @@ router.post('/:id/update', async (req, res) => {
                 logisticName: data.logisticName,
                 logisticPhone: data.logisticPhone,
                 personalName: data.personalName,
-                personalEmail: data.personalEmail || null,
                 personalPhone: data.personalPhone,
             },
         });
@@ -223,41 +247,43 @@ router.post('/:id/update', async (req, res) => {
 // POST /admin/customers/:id/approve — Approve registration
 router.post('/:id/approve', async (req, res) => {
     try {
+        const existingCustomer = await prisma.user.findUnique({
+            where: { id: req.params.id },
+            select: {
+                id: true,
+                email: true,
+                companyName: true,
+                ceoName: true,
+                personalName: true,
+            },
+        });
+
+        if (!existingCustomer) {
+            req.flash('error', 'Customer not found');
+            return res.redirect(`/admin/customers/${req.params.id}`);
+        }
+
+        await sendPasswordSetupInvite(existingCustomer);
+
         const customer = await prisma.user.update({
             where: { id: req.params.id },
-            data: { status: 'approved', approvedAt: new Date() },
+            data: {
+                email: normalizeEmail(existingCustomer.email),
+                status: 'approved',
+                approvedAt: new Date(),
+            },
         });
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-
-        // Try inviting via Supabase (sends email via configured SMTP/Resend)
-        let { error: emailError } = await supabase.auth.admin.inviteUserByEmail(
-            customer.email,
-            { redirectTo: `${frontendUrl}/reset-password` }
-        );
-
-        // If user already exists in Supabase Auth, fall back to password recovery email
-        if (emailError && emailError.code === 'email_exists') {
-            console.warn(`User ${customer.email} already in auth, sending recovery email instead...`);
-            const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-                customer.email,
-                { redirectTo: `${frontendUrl}/reset-password` }
-            );
-            emailError = resetError;
-        }
-
-        if (emailError) {
-            console.error('Supabase email error on approve:', emailError);
-            return res.redirect(`/admin/customers/${req.params.id}?error=Approved,+but+email+failed:+${encodeURIComponent(emailError.message)}`);
-        }
 
         await logActivity(req.session.adminId, 'CUSTOMER_APPROVED', 'User', req.params.id, {
             email: customer.email,
         });
 
-        res.redirect(`/admin/customers/${req.params.id}?msg=Customer+approved+and+invite+email+sent`);
+        req.flash('success', 'Customer approved and password setup email sent');
+        res.redirect(`/admin/customers/${req.params.id}`);
     } catch (err) {
         console.error('Approve customer error:', err);
-        res.redirect(`/admin/customers/${req.params.id}?error=Failed+to+approve+customer`);
+        req.flash('error', err.message || 'Failed to approve customer');
+        res.redirect(`/admin/customers/${req.params.id}`);
     }
 });
 
@@ -266,37 +292,37 @@ router.post('/:id/send-invite', async (req, res) => {
     try {
         const customer = await prisma.user.findUnique({
             where: { id: req.params.id },
-            select: { email: true, status: true, passwordHash: true }
+            select: {
+                email: true,
+                status: true,
+                passwordHash: true,
+                companyName: true,
+                ceoName: true,
+                personalName: true,
+            }
         });
 
         if (!customer) {
             return res.redirect(`/admin/customers`);
         }
         if (customer.status !== 'approved' || customer.passwordHash) {
-            return res.redirect(`/admin/customers/${req.params.id}?error=Customer+must+be+approved+and+not+have+a+password+yet`);
+            req.flash('error', 'Customer must be approved and not have a password yet');
+            return res.redirect(`/admin/customers/${req.params.id}`);
         }
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        // Send a password recovery email via Supabase (uses configured SMTP/Resend)
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-            customer.email,
-            { redirectTo: `${frontendUrl}/reset-password` }
-        );
-
-        if (resetError) {
-            console.error('Supabase email error on send-invite:', resetError);
-            return res.redirect(`/admin/customers/${req.params.id}?error=Failed+to+send+email:+${encodeURIComponent(resetError.message)}`);
-        }
+        await sendPasswordSetupInvite(customer);
 
         await logActivity(req.session.adminId, 'INVITE_SENT', 'User', req.params.id, {
             email: customer.email,
             type: 'password_setup',
         });
 
-        res.redirect(`/admin/customers/${req.params.id}?msg=Password+setup+email+sent+successfully`);
+        req.flash('success', 'Password setup email sent successfully');
+        res.redirect(`/admin/customers/${req.params.id}`);
     } catch (err) {
         console.error('Send invite error:', err);
-        res.redirect(`/admin/customers/${req.params.id}?error=An+unexpected+error+occurred`);
+        req.flash('error', err.message || 'An unexpected error occurred');
+        res.redirect(`/admin/customers/${req.params.id}`);
     }
 });
 
@@ -308,7 +334,7 @@ router.post('/:id/decline', async (req, res) => {
             data: { status: 'declined', declineReason: req.body.reason || null },
         });
         const customer = await prisma.user.findUnique({ where: { id: req.params.id } });
-        await sendDeclineEmail(customer.email, customer.companyName, req.body.reason);
+        await sendDeclineEmail(customer, req.body.reason);
 
         await logActivity(req.session.adminId, 'CUSTOMER_DECLINED', 'User', req.params.id, {
             email: customer.email,

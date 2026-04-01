@@ -1,26 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 const CONSENT_KEY = 'tb_cookie_consent';
 
+const readStoredConsent = () => {
+    try {
+        const item = window.localStorage.getItem(CONSENT_KEY);
+        return item ? JSON.parse(item) : null;
+    } catch (error) {
+        console.error('Error reading cookie consent', error);
+        return null;
+    }
+};
+
 export const useCookieConsent = () => {
-    const [consent, setConsent] = useState(() => {
-        try {
-            const item = window.localStorage.getItem(CONSENT_KEY);
-            return item ? JSON.parse(item) : null;
-        } catch (error) {
-            console.error('Error reading cookie consent', error);
-            return null;
-        }
-    });
-
-    const [showBanner, setShowBanner] = useState(false);
-
-    useEffect(() => {
-        // Automatically show banner if no consent state exists
-        if (!consent) {
-            setShowBanner(true);
-        }
-    }, [consent]);
+    const [consent, setConsent] = useState(readStoredConsent);
+    const [showBanner, setShowBanner] = useState(() => readStoredConsent() === null);
 
     // This updates the local state and localStorage
     const updateConsent = (newConsentState) => {
@@ -61,3 +55,5 @@ export const useCookieConsent = () => {
         setShowBanner
     };
 };
+
+export default useCookieConsent;

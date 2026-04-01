@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { forgotPassword } from '../services/api';
 import '../pages/pages-enhanced.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const ForgotPassword = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -17,24 +17,18 @@ const ForgotPassword = () => {
         if (searchParams.get('expired') === 'true') {
             setShowExpired(true);
             // Clean up the URL so refreshing won't re-show the banner
-            searchParams.delete('expired');
-            setSearchParams(searchParams, { replace: true });
+            const nextSearchParams = new URLSearchParams(searchParams);
+            nextSearchParams.delete('expired');
+            setSearchParams(nextSearchParams, { replace: true });
         }
-    }, []);
+    }, [searchParams, setSearchParams]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/auth/forgot-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-                credentials: 'include',
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Request failed');
+            await forgotPassword(email);
             setSubmitted(true);
         } catch (err) {
             setError(err.message);

@@ -120,7 +120,8 @@ router.post('/:id/status', async (req, res) => {
         // Validate transition
         const allowed = STATUS_TRANSITIONS[order.currentStatus] || [];
         if (!allowed.includes(newStatus)) {
-            return res.redirect(`/admin/orders/${req.params.id}?error=Invalid status transition`);
+            req.flash('error', 'Invalid status transition');
+            return res.redirect(`/admin/orders/${req.params.id}`);
         }
 
         // Update order + create history entry in transaction
@@ -141,7 +142,8 @@ router.post('/:id/status', async (req, res) => {
         res.redirect(`/admin/orders/${req.params.id}`);
     } catch (err) {
         console.error('Update order status error:', err);
-        res.redirect(`/admin/orders/${req.params.id}?error=${encodeURIComponent(err.message)}`);
+        req.flash('error', err.message);
+        res.redirect(`/admin/orders/${req.params.id}`);
     }
 });
 
@@ -190,13 +192,16 @@ router.post('/:id/retry-picqer-sync', async (req, res) => {
         });
 
         if (updated && updated.picqerOrderId) {
-            res.redirect(`/admin/orders/${req.params.id}?success=Picqer sync completed successfully`);
+            req.flash('success', 'Picqer sync completed successfully');
+            res.redirect(`/admin/orders/${req.params.id}`);
         } else {
-            res.redirect(`/admin/orders/${req.params.id}?error=Picqer sync attempt completed but order ID was not saved. Check Integration Logs for details.`);
+            req.flash('error', 'Picqer sync attempt completed but order ID was not saved. Check Integration Logs for details.');
+            res.redirect(`/admin/orders/${req.params.id}`);
         }
     } catch (err) {
         console.error('Retry Picqer sync error:', err);
-        res.redirect(`/admin/orders/${req.params.id}?error=${encodeURIComponent('Retry failed: ' + err.message)}`);
+        req.flash('error', 'Retry failed: ' + err.message);
+        res.redirect(`/admin/orders/${req.params.id}`);
     }
 });
 

@@ -3,6 +3,10 @@ import xss from 'xss';
 
 // Sanitize helper to prevent XSS in string inputs
 const sanitizeString = z.string().transform((val) => xss(val.trim()));
+const optionalNullableString = z.preprocess(
+    (value) => value == null ? undefined : value,
+    z.string().optional()
+);
 
 // Base reusable fields
 const emailSchema = z.string().email('Invalid email address').max(255);
@@ -63,8 +67,8 @@ const loginSchema = z.object({
 // Set / Reset Password Schema
 const setPasswordSchema = z.object({
     password: passwordSchema,
-    token: z.string().optional(),
-    code: z.string().optional()
+    token: optionalNullableString,
+    code: optionalNullableString
 }).refine(data => data.token || data.code, {
     message: "Either token or code must be provided",
     path: ["token"]

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import useCookieConsent from '../hooks/useCookieConsent';
+import { useCookieConsent } from '../hooks/useCookieConsent';
+
 
 /**
  * ConsentTracker: A non-rendering component that manages 
@@ -10,6 +11,8 @@ const ConsentTracker = () => {
   const { consent } = useCookieConsent();
 
   useEffect(() => {
+    if (!consent) return;
+
     // 1. Marketing Cookies (e.g. Facebook Pixel, LinkedIn Insight)
     if (consent.marketing) {
       console.log('Marketing consent granted: Initializing marketing trackers...');
@@ -23,6 +26,7 @@ const ConsentTracker = () => {
     }
 
   }, [consent]);
+
 
   return null; // This component doesn't render anything UI-wise
 };

@@ -3,7 +3,8 @@
 // The backend (Prisma) uses different field names than the frontend expects.
 // mapProduct() normalizes the essential fields while preserving ALL raw fields.
 
-const API_BASE = '/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
+
 
 /**
  * Maps a backend product object to the shape the frontend components expect.
@@ -23,8 +24,8 @@ export function mapProduct(p) {
         originalPrice: parseFloat(p.variantPrice) || 0,
         inStock: p.variantInventoryQty || 0,
         image: p.imageSrc || 'https://via.placeholder.com/400',
-        category: p.productCategory,
-        // brand, color, storage, region are the same names — no mapping needed
+        category: p.category ? p.category.name : p.productCategory,
+        brand: p.brandRel ? p.brandRel.name : p.brand,
     };
 }
 
@@ -131,7 +132,9 @@ export async function register(data) {
     });
     if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || `Registration failed: ${res.status}`);
+        const error = new Error(err.error || `Registration failed: ${res.status}`);
+        error.fields = err.fields;
+        throw error;
     }
     return res.json();
 }
@@ -148,6 +151,54 @@ export async function getCurrentUser() {
     const data = await res.json();
     return data.user;
 }
+
+export async function forgotPassword(email) {
+    const res = await fetch(`${API_BASE}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email })
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to send reset link');
+    }
+    return res.json();
+}
+
+export async function resetPassword(token, code, password) {
+    const body = { password };
+
+    if (token != null) body.token = token;
+    if (code != null) body.code = code;
+
+    const res = await fetch(`${API_BASE}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to reset password');
+    }
+    return res.json();
+}
+
+export async function sendContactMessage(formData) {
+    const res = await fetch(`${API_BASE}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to send message');
+    }
+    return res.json();
+}
+
 
 export async function validateCart(items) {
     const res = await fetch(`${API_BASE}/cart/validate`, {
@@ -179,3 +230,17 @@ export async function fetchOrders() {
     if (!res.ok) throw new Error('Failed to fetch orders');
     return res.json();
 }
+
+export async function setPassword(token, password) {
+    const res = await fetch(`${API_BASE}/auth/set-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password })
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to set password');
+    }
+    return res.json();
+}
+

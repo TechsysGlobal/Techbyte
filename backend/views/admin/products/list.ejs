@@ -149,7 +149,7 @@
                             <% products.forEach(p=> { %>
                                 <tr class="product-row" data-title="<%= (p.title || '').toLowerCase() %>"
                                     data-sku="<%= (p.variantSku || '').toLowerCase() %>"
-                                    data-brand="<%= p.brand || '' %>" data-status="<%= p.status || '' %>"
+                                    data-brand="<%= p.brandRel ? p.brandRel.name : '' %>" data-status="<%= p.status || '' %>"
                                     data-stock="<%= p.variantInventoryQty > 0 ? 'instock' : 'outofstock' %>"
                                     onclick="if(!event.target.closest('input,button,form,.no-nav'))window.location='/admin/products/<%= p.id %>/edit'"
                                     style="cursor:pointer;">
@@ -176,7 +176,7 @@
                                         </strong></td>
                                     <td><code><%= p.variantSku %></code></td>
                                     <td>
-                                        <%= p.brand || '—' %>
+                                        <%= p.brandRel ? p.brandRel.name : '—' %>
                                     </td>
                                     <td>€<%= parseFloat(p.variantPrice).toFixed(2) %>
                                     </td>

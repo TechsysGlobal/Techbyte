@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone, MapPin, Send, Check, MessageSquare, Clock, ChevronDown } from 'lucide-react';
+import { sendContactMessage } from '../services/api';
 import './Contact.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Country codes list with common countries
 const countryCodes = [
@@ -61,17 +61,7 @@ const Contact = () => {
         setError('');
 
         try {
-            const res = await fetch(`${API_BASE}/contact`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-
-            const data = await res.json();
-
-            if (!res.ok) {
-                throw new Error(data.error || 'Failed to send message');
-            }
+            await sendContactMessage(formData);
 
             setSubmitted(true);
             setTimeout(() => {
@@ -92,9 +82,6 @@ const Contact = () => {
             setIsSubmitting(false);
         }
     };
-
-    const selectedCountry = countryCodes.find(c => c.code === formData.countryCode);
-
     return (
         <div className="contact-page">
             <div className="container mx-auto px-6 py-8">

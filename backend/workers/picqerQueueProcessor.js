@@ -1,4 +1,4 @@
-import prisma from '../lib/prisma.js';
+import prisma, { Prisma } from '../lib/prisma.js';
 import logger from '../lib/logger.js';
 
 const QUEUE_NAME = 'picqer_webhook_queue';
@@ -113,9 +113,8 @@ async function processMessage(msg) {
 async function pollQueue() {
   try {
     // 1. Read the oldest pending message and lock it for 30 seconds
-    // Using executeRaw because pgmq.read returns a dynamically generated row type
-    const result = await prisma.$queryRawUnsafe(
-      `SELECT * FROM pgmq.read('${QUEUE_NAME}', 30, 1)`
+    const result = await prisma.$queryRaw(
+      Prisma.sql`SELECT * FROM pgmq.read(${QUEUE_NAME}, 30, 1)`
     );
 
     if (result && result.length > 0) {
@@ -126,8 +125,8 @@ async function pollQueue() {
 
       // 3. Delete message from queue upon completion (even if it was 'Ignored' or 'Error' logic)
       // This prevents poison pills from endlessly looping since we log the outcome to IntegrationLogs instead.
-      await prisma.$executeRawUnsafe(
-        `SELECT pgmq.delete('${QUEUE_NAME}', ${msg.msg_id}::bigint)`
+      await prisma.$executeRaw(
+        Prisma.sql`SELECT pgmq.delete(${QUEUE_NAME}, ${BigInt(msg.msg_id)})`
       );
 
       // We found a message, there might be more right behind it.

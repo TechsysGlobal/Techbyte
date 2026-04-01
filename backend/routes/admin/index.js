@@ -20,6 +20,13 @@ import visibilityRoutes from './visibility.js';
 
 const router = express.Router();
 
+function renderLogin(req, res, error = null) {
+    return res.render('admin/login', {
+        error,
+        csrfToken: typeof req.csrfToken === 'function' ? req.csrfToken() : res.locals.csrfToken || '',
+    });
+}
+
 // ─── Admin Auth Middleware ───────────────────────────────────────────────────
 
 async function requireAdmin(req, res, next) {
@@ -50,7 +57,7 @@ async function requireAdmin(req, res, next) {
 // ─── Login ───────────────────────────────────────────────────────────────────
 
 router.get('/login', (req, res) => {
-    res.render('admin/login', { error: null });
+    return renderLogin(req, res);
 });
 
 router.post('/login', async (req, res) => {
@@ -59,12 +66,12 @@ router.post('/login', async (req, res) => {
 
         // Authenticate via Supabase Auth
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) return res.render('admin/login', { error: 'Invalid email or password' });
+        if (error) return renderLogin(req, res, 'Invalid email or password');
 
         // Check Profile for admin role
         const profile = await prisma.profile.findUnique({ where: { id: data.user.id } });
         if (!profile || profile.role !== 'admin') {
-            return res.render('admin/login', { error: 'Access denied. Admin role required.' });
+            return renderLogin(req, res, 'Access denied. Admin role required.');
         }
 
         req.session.adminId = profile.id;
@@ -73,7 +80,7 @@ router.post('/login', async (req, res) => {
         res.redirect('/admin');
     } catch (err) {
         console.error('Admin login error:', err);
-        res.render('admin/login', { error: 'Login failed. Please try again.' });
+        return renderLogin(req, res, 'Login failed. Please try again.');
     }
 });
 

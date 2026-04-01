@@ -1,5 +1,6 @@
 generator client {
-  provider        = "prisma-client"
+  provider        = "prisma-client-js"
+
   output          = "../src/generated/prisma"
   previewFeatures = ["relationJoins"]
 }
@@ -7,6 +8,8 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+
 
 // ─── Existing Tables (mapped to current Supabase schema) ─────────────────────
 
@@ -285,3 +288,17 @@ model IntegrationLogs {
   @@index([sku])
   @@map("IntegrationLogs")
 }
+
+model SecurityLog {
+  id        String   @id @default(uuid())
+  event     String   // e.g., "login_failure"
+  email     String?
+  ip        String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@index([email, createdAt])
+  @@map("SecurityLog")
+}
+

@@ -42,14 +42,17 @@
                             </div>
                             <div class="form-group">
                                 <label for="categoryId">Category</label>
-                                <select id="categoryId" name="categoryId">
-                                    <option value="">Select category</option>
-                                    <% if (typeof categories !=='undefined' ) { categories.forEach(c=> { %>
-                                        <option value="<%= c.id %>" <%=product && product.categoryId===c.id
-                                            ? 'selected' : '' %>><%= c.name %>
-                                        </option>
-                                        <% }) } %>
-                                </select>
+                                <div style="display:flex;gap:8px;">
+                                    <select id="categoryId" name="categoryId" style="flex:1;">
+                                        <option value="">Select category</option>
+                                        <% if (typeof categories !=='undefined' ) { categories.forEach(c=> { %>
+                                            <option value="<%= c.id %>" <%=product && product.categoryId===c.id
+                                                ? 'selected' : '' %>><%= c.name %>
+                                            </option>
+                                            <% }) } %>
+                                    </select>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="addNewItem('category')" title="Add New Category" style="padding:0 10px;height:38px;">+</button>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label for="tags">Tags</label>
@@ -58,14 +61,17 @@
                             </div>
                             <div class="form-group">
                                 <label for="brandId">Brand</label>
-                                <select id="brandId" name="brandId">
-                                    <option value="">Select brand</option>
-                                    <% if (typeof brands !=='undefined' ) { brands.forEach(b=> { %>
-                                        <option value="<%= b.id %>" <%=product && product.brandId===b.id ? 'selected'
-                                            : '' %>><%= b.name %>
-                                        </option>
-                                        <% }) } %>
-                                </select>
+                                <div style="display:flex;gap:8px;">
+                                    <select id="brandId" name="brandId" style="flex:1;">
+                                        <option value="">Select brand</option>
+                                        <% if (typeof brands !=='undefined' ) { brands.forEach(b=> { %>
+                                            <option value="<%= b.id %>" <%=product && product.brandId===b.id ? 'selected'
+                                                : '' %>><%= b.name %>
+                                            </option>
+                                            <% }) } %>
+                                    </select>
+                                    <button type="button" class="btn btn-outline btn-sm" onclick="addNewItem('brand')" title="Add New Brand" style="padding:0 10px;height:38px;">+</button>
+                                </div>
                             </div>
                         </div>
 
@@ -328,6 +334,39 @@
                     if (!confirm('Remove this image?')) return;
                     document.getElementById('removeImageInput').value = '1';
                     document.getElementById('currentImageWrap').style.display = 'none';
+                }
+
+                async function addNewItem(type) {
+                    const name = prompt(`Enter new ${type} name:`);
+                    if (!name || !name.trim()) return;
+
+                    const endpoint = type === 'category' ? '/admin/categories/api' : '/admin/brands/api';
+                    const selectId = type === 'category' ? 'categoryId' : 'brandId';
+
+                    try {
+                        const resp = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name: name.trim() })
+                        });
+                        
+                        if (!resp.ok) {
+                            const err = await resp.json();
+                            throw new Error(err.error || `Failed to create ${type}`);
+                        }
+                        
+                        const newItem = await resp.json();
+                        const select = document.getElementById(selectId);
+                        
+                        // Add to dropdown and select it
+                        const option = new Option(newItem.name, newItem.id);
+                        select.add(option);
+                        select.value = newItem.id;
+                        
+                        alert(`New ${type} "${newItem.name}" added and selected.`);
+                    } catch (err) {
+                        alert('Error: ' + err.message);
+                    }
                 }
             </script>
 

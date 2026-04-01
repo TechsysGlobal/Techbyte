@@ -1,5 +1,5 @@
 import express from 'express';
-import prisma from '../../lib/prisma.js';
+import prisma, { Prisma } from '../../lib/prisma.js';
 import cache from '../../lib/cache.js';
 
 const router = express.Router();
@@ -94,7 +94,8 @@ router.get('/', async (req, res) => {
                     OR: [
                         { title: { contains: search, mode: 'insensitive' } },
                         { vendor: { contains: search, mode: 'insensitive' } },
-                        { brand: { contains: search, mode: 'insensitive' } },
+                        { brandRel: { name: { contains: search, mode: 'insensitive' } } },
+                        { category: { name: { contains: search, mode: 'insensitive' } } },
                         { model: { contains: search, mode: 'insensitive' } },
                         { variantSku: { contains: search, mode: 'insensitive' } },
                     ],
@@ -103,8 +104,16 @@ router.get('/', async (req, res) => {
         }
 
         // ── Other filters ──
-        if (brand) where.brand = { equals: brand, mode: 'insensitive' };
-        if (category) where.productCategory = { equals: category, mode: 'insensitive' };
+        if (brand) {
+            // Support both ID and Name for brand parameter
+            if (brand.length === 36) where.brandId = brand; // UUID
+            else where.brandRel = { name: { equals: brand, mode: 'insensitive' } };
+        }
+        if (category) {
+            // Support both ID and Name for category parameter
+            if (category.length === 36) where.categoryId = category; // UUID
+            else where.category = { name: { equals: category, mode: 'insensitive' } };
+        }
         if (color) where.color = { equals: color, mode: 'insensitive' };
         if (storage) where.storage = { equals: storage, mode: 'insensitive' };
         if (region) where.region = { equals: region, mode: 'insensitive' };
@@ -134,6 +143,7 @@ router.get('/', async (req, res) => {
                 orderBy,
                 take: pageSize,
                 skip,
+                include: { category: true, brandRel: true },
             }),
             prisma.product.count({ where }),
         ]);
@@ -163,54 +173,56 @@ router.get('/', async (req, res) => {
         // ── Filter aggregations (cached) ──
         let availableFilters = cache.get('filter_options');
         if (!availableFilters) {
-            // Replace 6 queries with a single raw SQL query
             // Optimized: Replace 6 queries and array_agg(DISTINCT) with dedicated grouped subqueries
-            let rawQuery;
+            let rawResult;
             if (allowedProductTags.length > 0) {
-                const tagsList = allowedProductTags.map(t => `'${t}'`).join(',');
-            // Flattening aggregations to rely on the B-Tree indexes we just added instead of costly sub-queries
-            let rawQuery;
-            if (allowedProductTags.length > 0) {
-                const tagsList = allowedProductTags.map(t => `'${t}'`).join(',');
-                rawQuery = `
+                // Parameterized query using Prisma.sql
+                const [result] = await prisma.$queryRaw(Prisma.sql`
                     SELECT 
-                        array_agg(DISTINCT brand) FILTER(WHERE brand IS NOT NULL) as brands,
-                        array_agg(DISTINCT "productCategory") FILTER(WHERE "productCategory" IS NOT NULL) as categories,
+                        array_agg(DISTINCT b.name) FILTER(WHERE b.name IS NOT NULL) as brands,
+                        array_agg(DISTINCT c.name) FILTER(WHERE c.name IS NOT NULL) as categories,
                         array_agg(DISTINCT color) FILTER(WHERE color IS NOT NULL) as colors,
                         array_agg(DISTINCT storage) FILTER(WHERE storage IS NOT NULL) as storages,
                         array_agg(DISTINCT region) FILTER(WHERE region IS NOT NULL) as regions,
                         MIN("variantPrice") as min_price,
                         MAX("variantPrice") as max_price
                     FROM "Product" p
+                    LEFT JOIN "Brand" b ON p."brandId" = b.id
+                    LEFT JOIN "Category" c ON p."categoryId" = c.id
                     WHERE published = true 
                       AND "variantPrice" > 0 
-                      ${inStock === 'true' || inStock === true ? 'AND "variantInventoryQty" > 0' : ''}
+                      ${(inStock === 'true' || inStock === true) ? Prisma.sql`AND "variantInventoryQty" > 0` : Prisma.sql``}
+
                       AND (
                           "isPrivate" = false OR 
                           EXISTS (
                               SELECT 1 FROM "ProductTagAccess" pta 
-                              WHERE pta."productId" = p.id AND pta.tag IN (${tagsList})
+                              WHERE pta."productId" = p.id AND pta.tag = ANY(${allowedProductTags})
                           )
                       )
-                `;
+                `);
+                rawResult = result;
             } else {
-                 rawQuery = `
+                const [result] = await prisma.$queryRaw(Prisma.sql`
                     SELECT 
-                        array_agg(DISTINCT brand) FILTER(WHERE brand IS NOT NULL) as brands,
-                        array_agg(DISTINCT "productCategory") FILTER(WHERE "productCategory" IS NOT NULL) as categories,
+                        array_agg(DISTINCT b.name) FILTER(WHERE b.name IS NOT NULL) as brands,
+                        array_agg(DISTINCT c.name) FILTER(WHERE c.name IS NOT NULL) as categories,
                         array_agg(DISTINCT color) FILTER(WHERE color IS NOT NULL) as colors,
                         array_agg(DISTINCT storage) FILTER(WHERE storage IS NOT NULL) as storages,
                         array_agg(DISTINCT region) FILTER(WHERE region IS NOT NULL) as regions,
                         MIN("variantPrice") as min_price,
                         MAX("variantPrice") as max_price
-                    FROM "Product"
+                    FROM "Product" p
+                    LEFT JOIN "Brand" b ON p."brandId" = b.id
+                    LEFT JOIN "Category" c ON p."categoryId" = c.id
                     WHERE published = true 
                       AND "variantPrice" > 0 
-                      ${inStock === 'true' || inStock === true ? 'AND "variantInventoryQty" > 0' : ''}
+                      ${(inStock === 'true' || inStock === true) ? Prisma.sql`AND "variantInventoryQty" > 0` : Prisma.sql``}
+
                       AND "isPrivate" = false
-                `;
+                `);
+                rawResult = result;
             }
-            const [rawResult] = await prisma.$queryRawUnsafe(rawQuery);
 
             availableFilters = {
                 brands: (rawResult?.brands || []).filter(Boolean).sort(),
@@ -219,12 +231,15 @@ router.get('/', async (req, res) => {
                 storages: sortStorageOptions((rawResult?.storages || []).filter(Boolean)),
                 regions: (rawResult?.regions || []).filter(Boolean).sort(),
                 priceRange: {
-                    min: rawResult?.min_price ? Math.floor(parseFloat(rawResult.min_price)) : 0,
-                    max: rawResult?.max_price ? Math.ceil(parseFloat(rawResult.max_price)) : 10000,
+                    min: rawResult?.min_price ? Math.floor(Number(rawResult.min_price)) : 0,
+                    max: rawResult?.max_price ? Math.ceil(Number(rawResult.max_price)) : 10000,
                 }
             };
-            cache.set('filter_options', availableFilters); // 5-min TTL (default)
+            if (rawResult) {
+                cache.set('filter_options', availableFilters); // 5-min TTL (default)
+            }
         }
+
 
         // ── Structured response ──
         const responseData = {
@@ -242,7 +257,6 @@ router.get('/', async (req, res) => {
 
         cache.set(cacheKey, responseData);
         res.json(responseData);
-        }
     } catch (err) {
         console.error('GET /api/products error:', err);
         res.status(500).json({ error: 'Failed to fetch products' });
@@ -253,20 +267,20 @@ router.get('/', async (req, res) => {
 // ⚠️ MUST be above /:handle or Express will match "filters" as a handle
 router.get('/filters/options', async (req, res) => {
     try {
-        const rawQuery = `
+        const [rawResult] = await prisma.$queryRaw(Prisma.sql`
             SELECT 
-                array_agg(DISTINCT brand) FILTER(WHERE brand IS NOT NULL) as brands,
-                array_agg(DISTINCT "productCategory") FILTER(WHERE "productCategory" IS NOT NULL) as categories,
+                array_agg(DISTINCT b.name) FILTER(WHERE b.name IS NOT NULL) as brands,
+                array_agg(DISTINCT c.name) FILTER(WHERE c.name IS NOT NULL) as categories,
                 array_agg(DISTINCT color) FILTER(WHERE color IS NOT NULL) as colors,
                 array_agg(DISTINCT storage) FILTER(WHERE storage IS NOT NULL) as storages,
                 array_agg(DISTINCT region) FILTER(WHERE region IS NOT NULL) as regions
-            FROM "Product"
+            FROM "Product" p
+            LEFT JOIN "Brand" b ON p."brandId" = b.id
+            LEFT JOIN "Category" c ON p."categoryId" = c.id
             WHERE published = true 
               AND "variantPrice" > 0 
               AND "isPrivate" = false
-        `;
-
-        const [rawResult] = await prisma.$queryRawUnsafe(rawQuery);
+        `);
 
         res.json({
             brands: (rawResult?.brands || []).filter(Boolean).sort(),
@@ -286,6 +300,7 @@ router.get('/:handle', async (req, res) => {
     try {
         const product = await prisma.product.findUnique({
             where: { handle: req.params.handle },
+            include: { category: true, brandRel: true },
         });
 
         if (!product || !product.published || parseFloat(product.variantPrice) <= 0) {

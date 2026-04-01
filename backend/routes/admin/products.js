@@ -19,6 +19,7 @@ router.get('/', async (req, res) => {
     try {
         const [products, brands] = await Promise.all([
             prisma.product.findMany({
+                include: { category: true, brandRel: true },
                 orderBy: { createdAt: 'desc' },
             }),
             prisma.brand.findMany({ orderBy: { name: 'asc' }, select: { name: true } }),
@@ -154,28 +155,15 @@ router.post('/', upload.single('image'), async (req, res) => {
             imageSrc = urlData.publicUrl;
         }
 
-        // Look up category/brand names for legacy support
-        let productCategory = data.productCategory;
-        let brand = data.brand;
-
-        if (data.categoryId) {
-            const cat = await prisma.category.findUnique({ where: { id: data.categoryId } });
-            if (cat) productCategory = cat.name;
-        }
-        if (data.brandId) {
-            const br = await prisma.brand.findUnique({ where: { id: data.brandId } });
-            if (br) brand = br.name;
-        }
-
         await prisma.product.create({
             data: {
                 handle,
                 title: data.title,
                 vendor: data.vendor,
-                productCategory,
                 categoryId: data.categoryId || null,
-                brand,
                 brandId: data.brandId || null,
+                productCategory: null, // Legacy string column
+                brand: null,           // Legacy string column
                 tags: data.tags || null,
 
                 published: data.published === 'on',
@@ -184,14 +172,6 @@ router.post('/', upload.single('image'), async (req, res) => {
                 variantPrice: parseFloat(data.variantPrice),
                 imageSrc,
                 imagePosition: data.imagePosition ? parseInt(data.imagePosition) : 1,
-                brand: data.brand || null,
-                color: data.color || null,
-                inBox: data.inBox || null,
-                model: data.model || null,
-                region: data.region || null,
-                sim: data.sim || null,
-                storage: data.storage || null,
-                warranty: data.warranty || null,
                 status: data.status || 'active',
             },
         });
@@ -210,6 +190,7 @@ router.get('/:id/edit', async (req, res) => {
         const [product, categories, brands, allProducts] = await Promise.all([
             prisma.product.findUnique({
                 where: { id: req.params.id },
+                include: { category: true, brandRel: true },
             }),
             prisma.category.findMany({ orderBy: { name: 'asc' } }),
             prisma.brand.findMany({ orderBy: { name: 'asc' } }),
@@ -243,7 +224,6 @@ router.post('/:id/update', upload.single('image'), async (req, res) => {
             handle: data.handle,
             title: data.title,
             vendor: data.vendor,
-            productCategory: data.productCategory,
             tags: data.tags || null,
 
             published: data.published === 'on',
@@ -251,7 +231,8 @@ router.post('/:id/update', upload.single('image'), async (req, res) => {
             variantInventoryQty: parseInt(data.variantInventoryQty) || 0,
             variantPrice: parseFloat(data.variantPrice),
             imagePosition: data.imagePosition ? parseInt(data.imagePosition) : 1,
-            brand: data.brand || null,
+            brand: null,           // Legacy string column
+            productCategory: null, // Legacy string column
             color: data.color || null,
             inBox: data.inBox || null,
             model: data.model || null,
@@ -262,28 +243,9 @@ router.post('/:id/update', upload.single('image'), async (req, res) => {
             status: data.status || 'active',
         };
 
-        // Look up category/brand names for legacy support
-        if (data.categoryId) {
-            const cat = await prisma.category.findUnique({ where: { id: data.categoryId } });
-            if (cat) {
-                updateData.categoryId = data.categoryId;
-                updateData.productCategory = cat.name;
-            }
-        } else if (data.categoryId === '') {
-            updateData.categoryId = null;
-            updateData.productCategory = null;
-        }
-
-        if (data.brandId) {
-            const br = await prisma.brand.findUnique({ where: { id: data.brandId } });
-            if (br) {
-                updateData.brandId = data.brandId;
-                updateData.brand = br.name;
-            }
-        } else if (data.brandId === '') {
-            updateData.brandId = null;
-            updateData.brand = null;
-        }
+        // Use categoryId and brandId from body
+        updateData.categoryId = data.categoryId || null;
+        updateData.brandId = data.brandId || null;
 
         // Handle image removal
         if (data.removeImage === '1' && !req.file) {

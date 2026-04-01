@@ -6,7 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ScrollToTop from './components/ScrollToTop'
-import React, { Suspense, lazy } from 'react'
+import React, { lazy } from 'react'
 
 // Lazy-loaded pages (code splitting)
 const Home = lazy(() => import('./pages/Home'))
@@ -25,26 +25,29 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const SetPassword = lazy(() => import('./pages/SetPassword'))
+const RegistrationPending = lazy(() => import('./pages/RegistrationPending'))
 
-// Global listener: intercept Supabase hash fragments on any page and redirect appropriately
+// Global listener: intercept Supabase recovery payloads on any page and redirect appropriately
 const AuthRedirectHandler = () => {
-  const { hash, pathname } = useLocation()
-  if (hash) {
-    const params = new URLSearchParams(hash.replace('#', '?'))
-    const errorCode = params.get('error_code')
-    const type = params.get('type')
+  const { hash, pathname, search } = useLocation()
+  const hashParams = new URLSearchParams(hash.replace('#', '?'))
+  const searchParams = new URLSearchParams(search)
+  const errorCode = hashParams.get('error_code') || searchParams.get('error_code')
+  const authError = hashParams.get('error') || searchParams.get('error')
+  const type = hashParams.get('type') || searchParams.get('type')
+  const hasRecoveryPayload =
+    hashParams.has('access_token') ||
+    Boolean(searchParams.get('code')) ||
+    type === 'recovery'
 
-    // Error case: expired OTP or access denied → send to forgot-password
-    if (errorCode === 'otp_expired' || params.get('error') === 'access_denied') {
-      return <Navigate to="/forgot-password?expired=true" replace />
-    }
-
-    // Recovery case: if user lands on ANY page with #type=recovery, redirect to /reset-password
-    // This catches scenarios where the email link points to the homepage or any other page
-    if (type === 'recovery' && pathname !== '/reset-password') {
-      return <Navigate to={`/reset-password${hash}`} replace />
-    }
+  if (errorCode === 'otp_expired' || authError === 'access_denied') {
+    return <Navigate to="/forgot-password?expired=true" replace />
   }
+
+  if (hasRecoveryPayload && pathname !== '/reset-password') {
+    return <Navigate to={`/reset-password${search}${hash}`} replace />
+  }
+
   return null
 }
 
@@ -68,6 +71,7 @@ function App() {
                 <Route path="checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Signup />} />
+                <Route path="registration-pending" element={<RegistrationPending />} />
                 <Route path="forgot-password" element={<ForgotPassword />} />
                 <Route path="reset-password" element={<ResetPassword />} />
                 <Route path="set-password" element={<SetPassword />} />

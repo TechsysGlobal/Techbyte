@@ -17,10 +17,242 @@ import {
     Facebook,
     Link as LinkIcon
 } from 'lucide-react';
+import { register } from '../services/api';
 import './pages-enhanced.css';
 import './Signup.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const findFirstFieldError = (fields) => {
+    if (!fields || typeof fields !== 'object') return null;
+    if (Array.isArray(fields._errors) && fields._errors.length > 0) {
+        return fields._errors[0];
+    }
+
+    for (const value of Object.values(fields)) {
+        const nestedError = findFirstFieldError(value);
+        if (nestedError) return nestedError;
+    }
+
+    return null;
+};
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^[+0-9\s-]+$/;
+const ZIP_PATTERN = /^[0-9a-zA-Z\s-]+$/;
+const TIN_PATTERN = /^[A-Z0-9-]+$/;
+const VAT_PATTERN = /^[A-Z]{2}[0-9A-Z]{2,15}$/;
+const IBAN_PATTERN = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{1,30}$/;
+
+const FIELD_VALIDATION = {
+    companyName: { label: 'Company name', required: true, minLength: 2, maxLength: 200, section: 0 },
+    companyPhone: {
+        label: 'Company phone number',
+        required: true,
+        minLength: 5,
+        maxLength: 20,
+        pattern: PHONE_PATTERN,
+        message: 'Use only +, numbers, spaces, and hyphens.',
+        inputMode: 'tel',
+        section: 0,
+    },
+    companyAddress: { label: 'Company address', required: true, minLength: 5, maxLength: 500, section: 0 },
+    companyCountry: { label: 'Company country', required: true, minLength: 2, maxLength: 100, section: 0 },
+    zipCode: {
+        label: 'Zip code',
+        required: true,
+        minLength: 2,
+        maxLength: 20,
+        pattern: ZIP_PATTERN,
+        message: 'Use only letters, numbers, spaces, and hyphens.',
+        section: 0,
+    },
+    taxId: { label: 'Tax ID / Business ID', maxLength: 50, section: 0 },
+    tinNumber: {
+        label: 'TIN number',
+        minLength: 5,
+        maxLength: 30,
+        pattern: TIN_PATTERN,
+        message: 'Use uppercase letters, numbers, and hyphens only.',
+        autoCapitalize: 'characters',
+        spellCheck: false,
+        section: 0,
+    },
+    vatNumber: {
+        label: 'VAT number',
+        minLength: 5,
+        maxLength: 20,
+        pattern: VAT_PATTERN,
+        message: 'Use a valid EU VAT number like DE123456789.',
+        autoCapitalize: 'characters',
+        spellCheck: false,
+        section: 0,
+    },
+    bankName: { label: 'Bank name', required: true, minLength: 2, maxLength: 150, section: 1 },
+    bankAddress: { label: 'Bank address', required: true, minLength: 2, maxLength: 300, section: 1 },
+    bankCountry: { label: 'Bank country', required: true, minLength: 2, maxLength: 100, section: 1 },
+    bankIban: {
+        label: 'IBAN',
+        required: true,
+        minLength: 10,
+        maxLength: 34,
+        pattern: IBAN_PATTERN,
+        message: 'Use a valid IBAN like DE89370400440532013000.',
+        autoCapitalize: 'characters',
+        spellCheck: false,
+        section: 1,
+    },
+    ceoName: { label: 'CEO name', required: true, minLength: 2, maxLength: 100, section: 2 },
+    ceoPhone: {
+        label: 'CEO phone number',
+        required: true,
+        minLength: 5,
+        maxLength: 20,
+        pattern: PHONE_PATTERN,
+        message: 'Use only +, numbers, spaces, and hyphens.',
+        inputMode: 'tel',
+        section: 2,
+    },
+    ceoEmail: {
+        label: 'CEO email',
+        required: true,
+        maxLength: 255,
+        validate: (value) => EMAIL_PATTERN.test(value),
+        message: 'Enter a valid email address.',
+        inputMode: 'email',
+        autoCapitalize: 'none',
+        spellCheck: false,
+        section: 2,
+    },
+    salesName: { label: 'Sales contact name', required: true, minLength: 2, maxLength: 100, section: 3 },
+    salesEmail: {
+        label: 'Sales email',
+        required: true,
+        maxLength: 255,
+        validate: (value) => EMAIL_PATTERN.test(value),
+        message: 'Enter a valid email address.',
+        inputMode: 'email',
+        autoCapitalize: 'none',
+        spellCheck: false,
+        section: 3,
+    },
+    salesPhone: {
+        label: 'Sales phone number',
+        required: true,
+        minLength: 5,
+        maxLength: 20,
+        pattern: PHONE_PATTERN,
+        message: 'Use only +, numbers, spaces, and hyphens.',
+        inputMode: 'tel',
+        section: 3,
+    },
+    purchaseName: { label: 'Purchase contact name', required: true, minLength: 2, maxLength: 100, section: 4 },
+    purchaseEmail: {
+        label: 'Purchase email',
+        required: true,
+        maxLength: 255,
+        validate: (value) => EMAIL_PATTERN.test(value),
+        message: 'Enter a valid email address.',
+        inputMode: 'email',
+        autoCapitalize: 'none',
+        spellCheck: false,
+        section: 4,
+    },
+    purchasePhone: {
+        label: 'Purchase phone number',
+        required: true,
+        minLength: 5,
+        maxLength: 20,
+        pattern: PHONE_PATTERN,
+        message: 'Use only +, numbers, spaces, and hyphens.',
+        inputMode: 'tel',
+        section: 4,
+    },
+    logisticName: { label: 'Logistics contact name', required: true, minLength: 2, maxLength: 100, section: 5 },
+    logisticPhone: {
+        label: 'Logistics phone number',
+        required: true,
+        minLength: 5,
+        maxLength: 20,
+        pattern: PHONE_PATTERN,
+        message: 'Use only +, numbers, spaces, and hyphens.',
+        inputMode: 'tel',
+        section: 5,
+    },
+    personalName: { label: 'Your name', required: true, minLength: 2, maxLength: 100, section: 6 },
+    personalEmail: {
+        label: 'Email',
+        required: true,
+        maxLength: 255,
+        validate: (value) => EMAIL_PATTERN.test(value),
+        message: 'Enter a valid email address.',
+        inputMode: 'email',
+        autoCapitalize: 'none',
+        spellCheck: false,
+        section: 6,
+    },
+    personalPhone: {
+        label: 'Phone number',
+        required: true,
+        minLength: 5,
+        maxLength: 20,
+        pattern: PHONE_PATTERN,
+        message: 'Use only +, numbers, spaces, and hyphens.',
+        inputMode: 'tel',
+        section: 6,
+    },
+};
+
+const SECTION_FIELDS = [
+    ['companyName', 'companyPhone', 'companyAddress', 'companyCountry', 'zipCode', 'taxId', 'tinNumber', 'vatNumber'],
+    ['bankName', 'bankAddress', 'bankCountry', 'bankIban'],
+    ['ceoName', 'ceoPhone', 'ceoEmail'],
+    ['salesName', 'salesEmail', 'salesPhone'],
+    ['purchaseName', 'purchaseEmail', 'purchasePhone'],
+    ['logisticName', 'logisticPhone'],
+    ['personalName', 'personalEmail', 'personalPhone'],
+];
+
+const normalizeFieldValue = (name, value) => {
+    if (typeof value !== 'string') return value;
+
+    if (name === 'tinNumber' || name === 'vatNumber' || name === 'bankIban') {
+        return value.toUpperCase().replace(/\s+/g, '');
+    }
+
+    return value;
+};
+
+const getFieldError = (fieldName, value) => {
+    const rule = FIELD_VALIDATION[fieldName];
+    if (!rule) return null;
+
+    const normalizedValue = typeof value === 'string' ? value.trim() : '';
+
+    if (rule.required && normalizedValue.length === 0) {
+        return `${rule.label} is required.`;
+    }
+
+    if (normalizedValue.length === 0) {
+        return null;
+    }
+
+    if (rule.minLength && normalizedValue.length < rule.minLength) {
+        return `${rule.label} must be at least ${rule.minLength} characters.`;
+    }
+
+    if (rule.maxLength && normalizedValue.length > rule.maxLength) {
+        return `${rule.label} must be at most ${rule.maxLength} characters.`;
+    }
+
+    if (rule.pattern && !rule.pattern.test(normalizedValue)) {
+        return rule.message || `${rule.label} is invalid.`;
+    }
+
+    if (rule.validate && !rule.validate(normalizedValue)) {
+        return rule.message || `${rule.label} is invalid.`;
+    }
+
+    return null;
+};
 
 const Signup = () => {
     const navigate = useNavigate();
@@ -82,15 +314,71 @@ const Signup = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({ ...prev, [name]: normalizeFieldValue(name, value) }));
+    };
+
+    const getInputValidationProps = (fieldName) => {
+        const rule = FIELD_VALIDATION[fieldName];
+        if (!rule) return {};
+
+        return {
+            required: Boolean(rule.required),
+            minLength: rule.minLength,
+            maxLength: rule.maxLength,
+            pattern: rule.pattern?.source,
+            title: rule.message,
+            inputMode: rule.inputMode,
+            autoCapitalize: rule.autoCapitalize,
+            spellCheck: rule.spellCheck,
+        };
+    };
+
+    const findSectionError = (sectionIndex) => {
+        const fields = SECTION_FIELDS[sectionIndex] || [];
+
+        for (const fieldName of fields) {
+            const message = getFieldError(fieldName, formData[fieldName]);
+            if (message) {
+                return { fieldName, message };
+            }
+        }
+
+        return null;
+    };
+
+    const showFieldValidation = (sectionIndex, fieldName, message) => {
+        setCurrentSection(sectionIndex);
+
+        window.setTimeout(() => {
+            const input = document.querySelector(`[name="${fieldName}"]`);
+
+            if (!input) {
+                alert(message);
+                return;
+            }
+
+            input.focus();
+            input.setCustomValidity(message);
+            input.reportValidity();
+
+            const clearMessage = () => input.setCustomValidity('');
+            input.addEventListener('input', clearMessage, { once: true });
+            input.addEventListener('change', clearMessage, { once: true });
+        }, 0);
     };
 
     const handleFileChange = (e) => {
         const file = e.target.files[0];
-        setFormData(prev => ({ ...prev, businessLicense: file }));
+        setFormData(prev => ({ ...prev, registrationCertificate: file }));
     };
 
     const handleNext = () => {
+        const sectionError = findSectionError(currentSection);
+        if (sectionError) {
+            showFieldValidation(currentSection, sectionError.fieldName, sectionError.message);
+            return;
+        }
+
         if (currentSection < sections.length - 1) {
             setCurrentSection(prev => prev + 1);
         }
@@ -104,40 +392,57 @@ const Signup = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        for (let sectionIndex = 0; sectionIndex < SECTION_FIELDS.length; sectionIndex += 1) {
+            const sectionError = findSectionError(sectionIndex);
+            if (sectionError) {
+                showFieldValidation(sectionIndex, sectionError.fieldName, sectionError.message);
+                return;
+            }
+        }
+
         setLoading(true);
         try {
-            // Map frontend state to backend requirements
             const payload = {
-                ...formData,
-                email: formData.personalEmail, // API expects 'email' from personal email
-                companyAddr: formData.companyAddress, // Map to model field
-                country: formData.companyCountry, // Map to model field
-                tinNumber: formData.tinNumber,
-                vatNumber: formData.vatNumber,
+                email: formData.personalEmail.trim().toLowerCase(),
+                companyName: formData.companyName.trim(),
+                companyPhone: formData.companyPhone.trim(),
+                companyAddr: formData.companyAddress.trim(),
+                country: formData.companyCountry.trim(),
+                zipCode: formData.zipCode.trim(),
+                taxId: formData.taxId.trim(),
+                tinNumber: formData.tinNumber.trim() || undefined,
+                vatNumber: formData.vatNumber.trim() || undefined,
+                bankName: formData.bankName.trim(),
+                bankAddress: formData.bankAddress.trim(),
+                bankCountry: formData.bankCountry.trim(),
+                bankIban: formData.bankIban.trim(),
+                ceoName: formData.ceoName.trim(),
+                ceoPhone: formData.ceoPhone.trim(),
+                ceoEmail: formData.ceoEmail.trim().toLowerCase(),
+                salesName: formData.salesName.trim(),
+                salesEmail: formData.salesEmail.trim().toLowerCase(),
+                salesPhone: formData.salesPhone.trim(),
+                purchaseName: formData.purchaseName.trim(),
+                purchaseEmail: formData.purchaseEmail.trim().toLowerCase(),
+                purchasePhone: formData.purchasePhone.trim(),
+                logisticName: formData.logisticName.trim(),
+                logisticPhone: formData.logisticPhone.trim(),
+                personalName: formData.personalName.trim(),
+                personalPhone: formData.personalPhone.trim(),
+                marketingOptIn: formData.marketingOptIn,
             };
 
-            const res = await fetch(`${API_BASE}/auth/register`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+            const data = await register(payload);
+            navigate('/registration-pending', {
+                state: {
+                    companyName: payload.companyName,
+                    email: payload.email,
+                    message: data.message,
+                },
             });
-            const data = await res.json();
-
-            if (!res.ok) {
-                if (data.fields) {
-                    // Extract first Zod error message to show user
-                    const fieldErrorKeys = Object.keys(data.fields).filter(k => k !== '_errors');
-                    if (fieldErrorKeys.length > 0 && data.fields[fieldErrorKeys[0]]._errors) {
-                        throw new Error(`Validation Error: ${data.fields[fieldErrorKeys[0]]._errors[0]}`);
-                    }
-                }
-                throw new Error(data.error || 'Registration failed');
-            }
-
-            alert('Registration submitted successfully! You will receive an email once your account is approved.');
-            navigate('/login');
         } catch (error) {
-            alert(error.message);
+            alert(findFirstFieldError(error.fields) || error.message);
         } finally {
             setLoading(false);
         }
@@ -163,9 +468,9 @@ const Signup = () => {
                                     name="companyName"
                                     value={formData.companyName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('companyName')}
                                     className="enhanced-input"
                                     placeholder="Enter company name"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -175,9 +480,9 @@ const Signup = () => {
                                     name="companyPhone"
                                     value={formData.companyPhone}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('companyPhone')}
                                     className="enhanced-input"
                                     placeholder="Enter phone number"
-                                    required
                                 />
                             </div>
                             <div className="form-group full-width">
@@ -187,9 +492,9 @@ const Signup = () => {
                                     name="companyAddress"
                                     value={formData.companyAddress}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('companyAddress')}
                                     className="enhanced-input"
                                     placeholder="Enter billing address"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -199,9 +504,9 @@ const Signup = () => {
                                     name="companyCountry"
                                     value={formData.companyCountry}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('companyCountry')}
                                     className="enhanced-input"
                                     placeholder="Enter country"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -211,9 +516,9 @@ const Signup = () => {
                                     name="zipCode"
                                     value={formData.zipCode}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('zipCode')}
                                     className="enhanced-input"
                                     placeholder="Enter zip code"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -223,36 +528,37 @@ const Signup = () => {
                                     name="taxId"
                                     value={formData.taxId}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('taxId')}
                                     className="enhanced-input"
                                     placeholder="Enter tax ID"
                                 />
                             </div>
                             <div className="form-group">
-                                <label>TIN Number *</label>
+                                <label>TIN Number</label>
                                 <input
                                     type="text"
                                     name="tinNumber"
                                     value={formData.tinNumber}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('tinNumber')}
                                     className="enhanced-input"
                                     placeholder="Enter TIN Number"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
-                                <label>VAT Number * (e.g. DE123456789)</label>
+                                <label>VAT Number (e.g. DE123456789)</label>
                                 <input
                                     type="text"
                                     name="vatNumber"
                                     value={formData.vatNumber}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('vatNumber')}
                                     className="enhanced-input"
                                     placeholder="Enter VAT"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Registration Certificate *</label>
+                                <label>Registration Certificate</label>
                                 <div className="file-upload-wrapper">
                                     <input
                                         type="file"
@@ -261,7 +567,6 @@ const Signup = () => {
                                         onChange={handleFileChange}
                                         accept=".pdf,.jpg,.jpeg,.png"
                                         className="file-input"
-                                        required
                                     />
                                     <label htmlFor="registrationCertificate" className="file-upload-btn">
                                         <Upload size={20} />
@@ -291,9 +596,9 @@ const Signup = () => {
                                     name="bankName"
                                     value={formData.bankName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('bankName')}
                                     className="enhanced-input"
                                     placeholder="Enter bank name"
-                                    required
                                 />
                             </div>
                             <div className="form-group full-width">
@@ -303,9 +608,9 @@ const Signup = () => {
                                     name="bankAddress"
                                     value={formData.bankAddress}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('bankAddress')}
                                     className="enhanced-input"
                                     placeholder="Enter bank address"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -315,9 +620,9 @@ const Signup = () => {
                                     name="bankCountry"
                                     value={formData.bankCountry}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('bankCountry')}
                                     className="enhanced-input"
                                     placeholder="Enter bank country"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -327,9 +632,9 @@ const Signup = () => {
                                     name="bankIban"
                                     value={formData.bankIban}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('bankIban')}
                                     className="enhanced-input"
                                     placeholder="Enter IBAN"
-                                    required
                                 />
                             </div>
                         </div>
@@ -354,9 +659,9 @@ const Signup = () => {
                                     name="ceoName"
                                     value={formData.ceoName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('ceoName')}
                                     className="enhanced-input"
                                     placeholder="Enter CEO name"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -366,9 +671,9 @@ const Signup = () => {
                                     name="ceoPhone"
                                     value={formData.ceoPhone}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('ceoPhone')}
                                     className="enhanced-input"
                                     placeholder="Enter phone number"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -378,9 +683,9 @@ const Signup = () => {
                                     name="ceoEmail"
                                     value={formData.ceoEmail}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('ceoEmail')}
                                     className="enhanced-input"
                                     placeholder="Enter email address"
-                                    required
                                 />
                             </div>
                         </div>
@@ -405,9 +710,9 @@ const Signup = () => {
                                     name="salesName"
                                     value={formData.salesName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('salesName')}
                                     className="enhanced-input"
                                     placeholder="Enter name"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -417,9 +722,9 @@ const Signup = () => {
                                     name="salesEmail"
                                     value={formData.salesEmail}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('salesEmail')}
                                     className="enhanced-input"
                                     placeholder="Enter email"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -429,9 +734,9 @@ const Signup = () => {
                                     name="salesPhone"
                                     value={formData.salesPhone}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('salesPhone')}
                                     className="enhanced-input"
                                     placeholder="Enter phone number"
-                                    required
                                 />
                             </div>
                         </div>
@@ -456,9 +761,9 @@ const Signup = () => {
                                     name="purchaseName"
                                     value={formData.purchaseName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('purchaseName')}
                                     className="enhanced-input"
                                     placeholder="Enter name"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -468,9 +773,9 @@ const Signup = () => {
                                     name="purchaseEmail"
                                     value={formData.purchaseEmail}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('purchaseEmail')}
                                     className="enhanced-input"
                                     placeholder="Enter email"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -480,9 +785,9 @@ const Signup = () => {
                                     name="purchasePhone"
                                     value={formData.purchasePhone}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('purchasePhone')}
                                     className="enhanced-input"
                                     placeholder="Enter phone number"
-                                    required
                                 />
                             </div>
                         </div>
@@ -507,9 +812,9 @@ const Signup = () => {
                                     name="logisticName"
                                     value={formData.logisticName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('logisticName')}
                                     className="enhanced-input"
                                     placeholder="Enter name"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -519,9 +824,9 @@ const Signup = () => {
                                     name="logisticPhone"
                                     value={formData.logisticPhone}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('logisticPhone')}
                                     className="enhanced-input"
                                     placeholder="Enter phone number"
-                                    required
                                 />
                             </div>
                         </div>
@@ -546,9 +851,9 @@ const Signup = () => {
                                     name="personalName"
                                     value={formData.personalName}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('personalName')}
                                     className="enhanced-input"
                                     placeholder="Enter name"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -558,9 +863,9 @@ const Signup = () => {
                                     name="personalEmail"
                                     value={formData.personalEmail}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('personalEmail')}
                                     className="enhanced-input"
                                     placeholder="Enter email"
-                                    required
                                 />
                             </div>
                             <div className="form-group">
@@ -570,9 +875,9 @@ const Signup = () => {
                                     name="personalPhone"
                                     value={formData.personalPhone}
                                     onChange={handleInputChange}
+                                    {...getInputValidationProps('personalPhone')}
                                     className="enhanced-input"
                                     placeholder="Enter phone number"
-                                    required
                                 />
                             </div>
                             <div className="form-group pb-4">

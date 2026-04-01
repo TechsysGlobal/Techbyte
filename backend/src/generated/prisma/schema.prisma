@@ -1,0 +1,301 @@
+generator client {
+  provider = "prisma-client-js"
+
+  output          = "../src/generated/prisma"
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Existing Tables (mapped to current Supabase schema) ─────────────────────
+
+model Product {
+  id                  String    @id @default(uuid())
+  handle              String    @unique
+  title               String
+  vendor              String
+  productCategory     String
+  tags                String?
+  published           Boolean?  @default(true)
+  variantSku          String
+  variantInventoryQty Int?      @default(0)
+  variantPrice        Decimal
+  imageSrc            String?
+  imagePosition       Int?
+  brand               String?
+  color               String?
+  inBox               String?
+  model               String?
+  region              String?
+  sim                 String?
+  storage             String?
+  warranty            String?
+  status              String
+  ordered             Int?      @default(0)
+  isPrivate           Boolean   @default(false)
+  createdAt           DateTime? @default(now())
+  updatedAt           DateTime? @default(now()) @updatedAt
+
+  orderItems OrderItem[]
+  tagAccess  ProductTagAccess[]
+
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  brandId    String?
+  brandRel   Brand?    @relation(fields: [brandId], references: [id])
+
+  @@index([brand])
+  @@index([productCategory])
+  @@index([color])
+  @@index([storage])
+  @@index([region])
+  @@index([variantPrice])
+  @@index([published])
+  @@map("Product")
+}
+
+model Category {
+  id       String  @id @default(uuid())
+  name     String
+  slug     String  @unique
+  imageUrl String?
+
+  products Product[]
+
+  @@map("Category")
+}
+
+model User {
+  id             String  @id @default(uuid()) @db.Uuid
+  email          String  @unique
+  companyName    String
+  companyPhone   String
+  companyAddr    String
+  country        String
+  zipCode        String
+  taxId          String
+  tinNumber      String?
+  vatNumber      String?
+  regCertUrl     String?
+  bankName       String
+  bankAddress    String
+  bankCountry    String
+  bankIban       String
+  ceoName        String
+  ceoPhone       String
+  ceoEmail       String
+  salesName      String
+  salesEmail     String
+  salesPhone     String
+  purchaseName   String
+  purchaseEmail  String
+  purchasePhone  String
+  logisticName   String
+  logisticPhone  String
+  personalName   String
+  personalPhone  String
+  marketingOptIn Boolean @default(false)
+
+  // NEW columns for approval workflow
+  status               String    @default("pending") // pending | approved | declined
+  declineReason        String?
+  approvedAt           DateTime?
+  tags                 String[]  @default([]) @map("accessTags") // Tags for catalog visibility access
+  passwordHash         String?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  picqerCustomerId     Int?
+
+  orders            Order[]
+  customerDiscounts CustomerDiscount[]
+
+  @@map("User")
+}
+
+model Order {
+  id                String    @id @default(uuid())
+  userId            String    @db.Uuid
+  subtotal          Decimal
+  vatRate           Float     @default(0.05) // Snapshot of VAT rate at order time
+  vatPrice          Decimal
+  shippingPrice     Decimal
+  totalAmount       Decimal
+  currentStatus     String
+  picqerOrderId     Int?
+  picqerOrderNumber String?
+  termsAcceptedAt   DateTime?
+  createdAt         DateTime? @default(now())
+
+  user          User                 @relation(fields: [userId], references: [id])
+  items         OrderItem[]
+  statusHistory OrderStatusHistory[]
+
+  @@map("Order")
+}
+
+model OrderItem {
+  id          String  @id @default(uuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  priceAtSale Decimal
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("OrderItem")
+}
+
+model OrderStatusHistory {
+  id        String    @id @default(uuid())
+  orderId   String
+  status    String
+  details   Json?
+  createdAt DateTime? @default(now())
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@map("OrderStatusHistory")
+}
+
+// ─── New Tables ──────────────────────────────────────────────────────────────
+
+model Profile {
+  id    String @id @default(uuid()) @db.Uuid
+  email String @unique
+  role  String @default("customer") // "admin" or "customer"
+  name  String
+
+  activityLogs ActivityLog[]
+
+  @@map("Profile")
+}
+
+model Brand {
+  id      String  @id @default(uuid())
+  name    String  @unique
+  slug    String  @unique
+  logoUrl String?
+
+  products Product[]
+
+  @@map("Brand")
+}
+
+model Discount {
+  id        String   @id @default(uuid())
+  name      String
+  type      String // "PERCENTAGE" or "FIXED"
+  value     Decimal
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  customerDiscounts CustomerDiscount[]
+
+  @@map("Discount")
+}
+
+model CustomerDiscount {
+  id         Int      @id @default(autoincrement())
+  customerId String   @db.Uuid
+  discountId String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  customer User     @relation(fields: [customerId], references: [id])
+  discount Discount @relation(fields: [discountId], references: [id])
+
+  @@index([customerId, isActive])
+  @@map("CustomerDiscount")
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  subject     String
+  htmlContent String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("EmailTemplate")
+}
+
+model Session {
+  sid    String   @id
+  sess   Json
+  expire DateTime
+
+  @@index([expire])
+  @@map("session")
+}
+
+model ProductTagAccess {
+  id        Int    @id @default(autoincrement())
+  productId String
+  tag       String
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([productId, tag])
+  @@index([productId, tag])
+  @@map("ProductTagAccess")
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  adminId   String?  @db.Uuid
+  action    String
+  entity    String
+  entityId  String
+  details   Json?
+  createdAt DateTime @default(now())
+
+  // Relation
+  // admin     Profile? @relation(fields: [adminId], references: [id]) 
+  // Commented out to avoid circular dependency issues if Profile isn't fully set up yet, 
+  // but strictly speaking we just need the ID. We can enable the relation if Profile exists.
+  // Given Profile exists (line 140), let's uncomment it but use a name that doesn't conflict.
+  adminUser Profile? @relation(fields: [adminId], references: [id])
+
+  @@index([entity, entityId])
+  @@map("ActivityLog")
+}
+
+model VisibilityRule {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  productTag  String // Products with this tag become private
+  customerTag String // Customers with this tag can see those products
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @default(now()) @updatedAt
+
+  @@map("VisibilityRule")
+}
+
+model IntegrationLogs {
+  id        String   @id @default(uuid())
+  status    String // Success | Ignored | Error
+  sku       String?
+  details   String? // Action Details
+  createdAt DateTime @default(now())
+
+  @@index([status])
+  @@index([sku])
+  @@map("IntegrationLogs")
+}
+
+model SecurityLog {
+  id        String   @id @default(uuid())
+  event     String // e.g., "login_failure"
+  email     String?
+  ip        String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([ip, createdAt])
+  @@index([email, createdAt])
+  @@map("SecurityLog")
+}

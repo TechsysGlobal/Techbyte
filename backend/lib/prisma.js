@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { PrismaClient } from '../src/generated/prisma/client.ts';
+import { PrismaClient } from '../src/generated/prisma/index.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 import pg from 'pg';
 import auditLogExtension from './prismaExtension.js';
@@ -13,4 +13,6 @@ const basePrisma = new PrismaClient({ adapter });
 
 const prisma = basePrisma.$extends(auditLogExtension);
 
+export { PrismaClient } from '../src/generated/prisma/index.js';
+export { Prisma } from '../src/generated/prisma/index.js';
 export default prisma;

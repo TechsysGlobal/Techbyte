@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
 import { Link, useLocation, Navigate } from 'react-router-dom';
+import { resetPassword as apiResetPassword } from '../services/api';
 import '../pages/pages-enhanced.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const ResetPassword = () => {
     const { hash, search } = useLocation();
@@ -17,6 +18,8 @@ const ResetPassword = () => {
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
@@ -36,14 +39,7 @@ const ResetPassword = () => {
 
         setLoading(true);
         try {
-            const res = await fetch(`${API_BASE}/auth/reset-password`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token, code, password }),
-                credentials: 'include',
-            });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || 'Reset failed');
+            await apiResetPassword(token, code, password);
             setSuccess(true);
         } catch (err) {
             setError(err.message);
@@ -102,26 +98,46 @@ const ResetPassword = () => {
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
                             <label className="block text-sm font-semibold text-text-dark mb-2">New Password</label>
-                            <input
-                                type="password"
-                                placeholder="Min. 8 characters"
-                                className="enhanced-input"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                minLength={8}
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    placeholder="Min. 8 characters"
+                                    className="enhanced-input pr-12"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                    minLength={8}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((value) => !value)}
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-text-muted hover:text-text-dark"
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-text-dark mb-2">Confirm Password</label>
-                            <input
-                                type="password"
-                                placeholder="Re-enter password"
-                                className="enhanced-input"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    placeholder="Re-enter password"
+                                    className="enhanced-input pr-12"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword((value) => !value)}
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-text-muted hover:text-text-dark"
+                                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                                >
+                                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
                         </div>
 
                         {error && (

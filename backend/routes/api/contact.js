@@ -1,4 +1,5 @@
 import express from 'express';
+import xss from 'xss';
 import { sendEmail } from '../../lib/email.js';
 
 const router = express.Router();
@@ -20,16 +21,17 @@ router.post('/', async (req, res) => {
                     <h2 style="margin: 0; color: #36b084;">New Contact Form Submission</h2>
                 </div>
                 <div style="padding: 20px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px;">
-                    <p><strong>Name:</strong> ${name}</p>
-                    <p><strong>Email:</strong> ${email}</p>
-                    <p><strong>Phone:</strong> ${fullPhoneNumber}</p>
-                    <p><strong>Subject:</strong> ${subject}</p>
+                    <p><strong>Name:</strong> ${xss(name)}</p>
+                    <p><strong>Email:</strong> ${xss(email)}</p>
+                    <p><strong>Phone:</strong> ${xss(fullPhoneNumber)}</p>
+                    <p><strong>Subject:</strong> ${xss(subject)}</p>
                     <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
                     <p><strong>Message:</strong></p>
-                    <p style="white-space: pre-wrap;">${message}</p>
+                    <p style="white-space: pre-wrap;">${xss(message)}</p>
                 </div>
             </div>
         `;
+
 
         // Send to admin email
         const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL || 'shopify@techsysglobal.ae';

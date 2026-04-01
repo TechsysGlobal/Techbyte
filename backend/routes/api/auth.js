@@ -1,13 +1,64 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
 import prisma from '../../lib/prisma.js';
 import supabase from '../../lib/supabase.js';
 import { encrypt } from '../../lib/encryption.js';
-import { notifyAdminNewRegistration, sendApprovalEmail, sendDeclineEmail } from '../../lib/email.js';
-import { registrationSchema, loginSchema, passwordSchema, setPasswordSchema } from '../../lib/validators.js';
+import { notifyAdminNewRegistration, sendSecurityAlert } from '../../lib/email.js';
+import { registrationSchema, loginSchema, setPasswordSchema } from '../../lib/validators.js';
+import logger from '../../lib/logger.js';
 
 const router = express.Router();
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+const normalizeEmail = (email) => email.trim().toLowerCase();
+const buildValidationErrorResponse = (zodError) => {
+    const issue = zodError.issues?.[0];
+    const field = issue?.path?.join('.');
+    const message = issue?.message || 'Validation failed';
+
+    return {
+        error: field ? `${field}: ${message}` : message,
+        fields: zodError.flatten(),
+    };
+};
+
+function buildRegistrationData(data) {
+    return {
+        email: normalizeEmail(data.email),
+        companyName: data.companyName,
+        companyPhone: data.companyPhone,
+        companyAddr: data.companyAddr,
+        country: data.country,
+        zipCode: data.zipCode,
+        taxId: data.taxId?.trim() || '',
+        tinNumber: data.tinNumber?.trim() || null,
+        vatNumber: data.vatNumber?.trim() || null,
+        bankName: data.bankName,
+        bankAddress: data.bankAddress,
+        bankCountry: data.bankCountry,
+        bankIban: encrypt(data.bankIban),
+        ceoName: data.ceoName,
+        ceoPhone: data.ceoPhone,
+        ceoEmail: normalizeEmail(data.ceoEmail),
+        salesName: data.salesName,
+        salesEmail: normalizeEmail(data.salesEmail),
+        salesPhone: data.salesPhone,
+        purchaseName: data.purchaseName,
+        purchaseEmail: normalizeEmail(data.purchaseEmail),
+        purchasePhone: data.purchasePhone,
+        logisticName: data.logisticName,
+        logisticPhone: data.logisticPhone,
+        personalName: data.personalName,
+        personalPhone: data.personalPhone,
+        marketingOptIn: Boolean(data.marketingOptIn),
+        status: 'pending',
+        declineReason: null,
+        approvedAt: null,
+        passwordHash: null,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+    };
+}
 
 // POST /api/auth/register — Business registration
 router.post('/register', async (req, res) => {
@@ -17,39 +68,29 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'Validation failed', fields: parsed.error.format() });
         }
 
-        const {
-            email, companyName, companyPhone, companyAddr, country, zipCode, taxId,
-            tinNumber, vatNumber,
-            bankName, bankAddress, bankCountry, bankIban,
-            ceoName, ceoPhone, ceoEmail,
-            salesName, salesEmail, salesPhone,
-            purchaseName, purchaseEmail, purchasePhone,
-            logisticName, logisticPhone,
-            personalName, personalPhone,
-            marketingOptIn
-        } = parsed.data;
+        const normalizedEmail = normalizeEmail(parsed.data.email);
+        const existing = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+            select: { id: true, status: true },
+        });
 
-        // Check if email exists
-        const existing = await prisma.user.findUnique({ where: { email } });
-        if (existing) {
+        if (existing?.status === 'approved') {
             return res.status(400).json({ error: 'Email already registered' });
         }
 
-        const customer = await prisma.user.create({
-            data: {
-                email, companyName, companyPhone, companyAddr, country, zipCode, taxId,
-                tinNumber, vatNumber,
-                bankName, bankAddress, bankCountry,
-                bankIban: encrypt(bankIban), // Encrypt PII
-                ceoName, ceoPhone, ceoEmail,
-                salesName, salesEmail, salesPhone,
-                purchaseName, purchaseEmail, purchasePhone,
-                logisticName, logisticPhone,
-                personalName, personalPhone,
-                marketingOptIn,
-                status: 'pending',
-            },
+        const registrationData = buildRegistrationData({
+            ...parsed.data,
+            email: normalizedEmail,
         });
+
+        const customer = existing
+            ? await prisma.user.update({
+                where: { id: existing.id },
+                data: registrationData,
+            })
+            : await prisma.user.create({
+                data: registrationData,
+            });
 
         // Notify admin
         try {
@@ -58,8 +99,10 @@ router.post('/register', async (req, res) => {
             console.error('Admin notification email failed:', emailErr.message);
         }
 
-        res.status(201).json({
-            message: 'Registration submitted. You will receive an email once your account is approved.',
+        res.status(existing ? 200 : 201).json({
+            message: existing
+                ? 'Registration updated. Your application is pending admin review.'
+                : 'Registration submitted. You will receive an email once your account is approved.',
             customerId: customer.id,
         });
     } catch (err) {
@@ -75,21 +118,65 @@ router.post('/login', async (req, res) => {
         if (!parsed.success) {
             return res.status(400).json({ error: 'Validation failed', fields: parsed.error.format() });
         }
-        const { email, password } = parsed.data;
+        const email = normalizeEmail(parsed.data.email);
+        const { password } = parsed.data;
         const user = await prisma.user.findUnique({ where: { email } });
 
-        if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+        const logFailure = async (reason) => {
+            await prisma.securityLog.create({
+                data: {
+                    event: 'login_failure',
+                    email,
+                    ip: req.ip,
+                    details: { reason }
+                }
+            });
+            logger.warn(`Failed login: ${email} from ${req.ip} - ${reason}`);
+
+            // Check for brute force (10 failures in 5 mins)
+            const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000);
+            const failureCount = await prisma.securityLog.count({
+                where: {
+                    ip: req.ip,
+                    event: 'login_failure',
+                    createdAt: { gte: fiveMinsAgo }
+                }
+            });
+
+            if (failureCount === 10) { // Alert only on the 10th attempt to avoid spam
+                await sendSecurityAlert(req.ip, failureCount, email);
+            }
+        };
+
+        if (!user) {
+            await logFailure('User not found');
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
         if (user.status !== 'approved') {
+            await logFailure(`Account status: ${user.status}`);
             return res.status(403).json({
                 error: user.status === 'pending'
                     ? 'Your registration is pending approval.'
                     : 'Your registration was declined. Please check your email for details.',
             });
         }
-        if (!user.passwordHash) return res.status(403).json({ error: 'Please set your password first using the link sent to your email.' });
+        if (!user.passwordHash) {
+            await logFailure('Password not set');
+            return res.status(403).json({ error: 'Please set your password first using the link sent to your email.' });
+        }
 
         const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return res.status(401).json({ error: 'Invalid email or password' });
+        if (!valid) {
+            await logFailure('Invalid password');
+            return res.status(401).json({ error: 'Invalid email or password' });
+        }
+
+        // Prevent admins from accessing the customer portal
+        const profile = await prisma.profile.findUnique({ where: { email: user.email } });
+        if (profile && profile.role === 'admin') {
+            await logFailure('Admin login attempt on customer portal');
+            return res.status(403).json({ error: 'Admins cannot login to the customer portal.' });
+        }
 
         // Regenerate session to prevent session fixation attacks
         req.session.regenerate((err) => {
@@ -150,7 +237,12 @@ router.post('/set-password', async (req, res) => {
     try {
         const parsed = setPasswordSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({ error: 'Validation failed', fields: parsed.error.format() });
+            const validationError = buildValidationErrorResponse(parsed.error);
+            logger.warn({
+                route: 'POST /api/auth/set-password',
+                validation: validationError.fields,
+            }, 'Password setup validation failed');
+            return res.status(400).json(validationError);
         }
         const { token, password } = parsed.data;
 
@@ -187,16 +279,16 @@ router.post('/forgot-password', async (req, res) => {
         const { email } = req.body;
         if (!email) return res.status(400).json({ error: 'Email is required' });
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const normalizedEmail = normalizeEmail(email);
+        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
         // Always return success (don't reveal if email exists)
         if (!user || user.status !== 'approved') {
             return res.json({ message: 'If an account exists with that email, a reset link has been sent.' });
         }
 
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-            email,
-            { redirectTo: `${frontendUrl}/reset-password` }
+            normalizedEmail,
+            { redirectTo: `${FRONTEND_URL}/reset-password` }
         );
 
         if (resetError) {
@@ -219,7 +311,12 @@ router.post('/reset-password', async (req, res) => {
     try {
         const parsed = setPasswordSchema.safeParse(req.body);
         if (!parsed.success) {
-            return res.status(400).json({ error: 'Validation failed', fields: parsed.error.format() });
+            const validationError = buildValidationErrorResponse(parsed.error);
+            logger.warn({
+                route: 'POST /api/auth/reset-password',
+                validation: validationError.fields,
+            }, 'Password reset validation failed');
+            return res.status(400).json(validationError);
         }
         const { token, code, password } = parsed.data;
 
@@ -242,11 +339,15 @@ router.post('/reset-password', async (req, res) => {
         }
 
         // Find the user in Prisma by email
+        const normalizedEmail = normalizeEmail(authUser.email || '');
         const user = await prisma.user.findUnique({
-            where: { email: authUser.email },
+            where: { email: normalizedEmail },
         });
 
         if (!user) return res.status(404).json({ error: 'User not found in database' });
+        if (user.status !== 'approved') {
+            return res.status(403).json({ error: 'Account not approved' });
+        }
 
         const passwordHash = await bcrypt.hash(password, 12);
 

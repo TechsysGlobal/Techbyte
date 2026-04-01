@@ -39,8 +39,6 @@ router.get('/', async (req, res) => {
             rules,
             productTags,
             customerTags,
-            success: req.query.success || null,
-            error: req.query.error || null,
         });
     } catch (err) {
         console.error('Visibility page error:', err);
@@ -54,7 +52,8 @@ router.post('/', async (req, res) => {
         const { name, description, productTag, customerTag } = req.body;
 
         if (!name || !productTag || !customerTag) {
-            return res.redirect('/admin/visibility?error=' + encodeURIComponent('Name, Product Tag, and Customer Tag are required'));
+            req.flash('error', 'Name, Product Tag, and Customer Tag are required');
+            return res.redirect('/admin/visibility');
         }
 
         // Create the rule
@@ -84,10 +83,12 @@ router.post('/', async (req, res) => {
         }
         const productsWithTag = { length: matchingIds.length };
 
-        res.redirect('/admin/visibility?success=' + encodeURIComponent(`Rule "${name}" created. ${productsWithTag.length} product(s) marked private.`));
+        req.flash('success', `Rule "${name}" created. ${matchingIds.length} product(s) marked private.`);
+        res.redirect('/admin/visibility');
     } catch (err) {
         console.error('Create visibility rule error:', err);
-        res.redirect('/admin/visibility?error=' + encodeURIComponent(err.message));
+        req.flash('error', err.message);
+        res.redirect('/admin/visibility');
     }
 });
 
@@ -121,10 +122,12 @@ router.post('/:id/delete', async (req, res) => {
             }
         }
 
-        res.redirect('/admin/visibility?success=' + encodeURIComponent(`Rule "${rule.name}" deleted.`));
+        req.flash('success', `Rule "${rule.name}" deleted.`);
+        res.redirect('/admin/visibility');
     } catch (err) {
         console.error('Delete visibility rule error:', err);
-        res.redirect('/admin/visibility?error=' + encodeURIComponent(err.message));
+        req.flash('error', err.message);
+        res.redirect('/admin/visibility');
     }
 });
 
